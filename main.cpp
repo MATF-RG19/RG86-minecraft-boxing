@@ -91,6 +91,93 @@ static void on_display(void)
             0, 1, 0
         );
 
+    //ring
+    glPushMatrix();
+        glColor3f(0, 0, 1);
+        glScalef(7, 1, 7);
+        glTranslatef(0.1, 0.1, 0.1);
+        glutSolidCube(1);
+
+    
+        glColor3f(1, 1, 1);
+        glutWireCube(1);
+     glPopMatrix();
+
+     //stubovi ringa
+     glPushMatrix();
+        glColor3f(1,1,1);
+        glTranslatef(-2.65, 1.2,-2.65);
+        glScalef(0.1, 1.2, 0.1);
+        glutSolidCube(1);
+        glColor3f(1, 0, 1);
+        glutWireCube(1);     
+     glPopMatrix();
+
+     glPushMatrix();
+        glColor3f(1,1,1);
+        glTranslatef(4.12, 1.2,-2.65);
+        glScalef(0.1, 1.2, 0.1);
+        glutSolidCube(1);
+        glColor3f(1, 0, 1);
+        glutWireCube(1);     
+     glPopMatrix();
+
+     glPushMatrix();
+        glColor3f(1,1,1);
+        glTranslatef(4.12, 1.2,4.12);
+        glScalef(0.1, 1.2, 0.1);
+        glutSolidCube(1);     
+        glColor3f(1, 0, 1);
+        glutWireCube(1);
+     glPopMatrix();
+
+
+     glPushMatrix();
+        glColor3f(1,1,1);
+        glTranslatef(-2.65, 1.2,4.12);
+        glScalef(0.1, 1.2, 0.1);
+        glutSolidCube(1);
+        glColor3f(1, 0, 1);
+        glutWireCube(1);     
+     glPopMatrix();
+
+     //konopci
+    glPushMatrix();
+        glLineWidth(5);
+        glBegin(GL_LINES);
+        glColor3f(1,1,1);
+
+        //gornji konopci
+        glVertex3f(-2.65, 1.75,4.12);
+        glVertex3f(4.12, 1.75,4.12);
+
+        glVertex3f(-2.65, 1.75,4.12);
+        glVertex3f(-2.65, 1.75,-2.65);
+
+        glVertex3f(-2.65, 1.75,-2.65);
+        glVertex3f(4.12, 1.75,-2.65);
+
+
+        glVertex3f(4.12, 1.75,-2.65);
+        glVertex3f(4.12, 1.75,4.12);
+
+        //donji konopci
+        glVertex3f(-2.65, 1.25,4.12);
+        glVertex3f(4.12, 1.25,4.12);
+
+        glVertex3f(-2.65, 1.25,4.12);
+        glVertex3f(-2.65, 1.25,-2.65);
+
+        glVertex3f(-2.65, 1.25,-2.65);
+        glVertex3f(4.12, 1.25,-2.65);
+
+
+        glVertex3f(4.12, 1.25,-2.65);
+        glVertex3f(4.12, 1.25,4.12);
+
+        glEnd();
+    glPopMatrix();
+
 
    /* cube k1;
     k1.cube_set_value(3, 3, 3);
