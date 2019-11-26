@@ -10,9 +10,6 @@ static int window_width, window_height;
 //globalna kako bi se mogla koristiti u svim funkcijama
 player p1;
 
-static double player1_X = p1.body.Xcenter;
-static double player1_Y = p1.body.Ycenter;
-static double player1_Z = p1.body.Zcenter;
 
 static int left_hand_punch;
 static int right_hand_punch; 
@@ -40,6 +37,7 @@ int main(int argc, char **argv)
     
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
+
 
     glutInitWindowSize(840, 1200);
     glutInitWindowPosition(100, 100);
@@ -242,11 +240,6 @@ static void on_display(void)
 
 
     p1.draw_player();
-    //azuriranje koordinata tela igraca1 pri svakom pokretu
-    player1_X = p1.body.Xcenter;
-    player1_Y = p1.body.Ycenter;
-    player1_Z = p1.body.Zcenter;
-    printf("%lf %lf %lf\n", player1_X, player1_Y, player1_Z);
 
     glutSwapBuffers();
 }
@@ -350,8 +343,7 @@ static void on_timer_movement(int value)
     //ovde sam uzeo desnu ruku i proveravam koliko je jos rotacije preostalo da se
     //izvrsi tako sto rotacija ide od 5 pa se smanjuje do 0 cime se postize efekat
     //glatkog pokreta. Dakle ako je pomeranje aktivirano za neku od starna 
-    if(p1.right_hand.translate_for > 0 && (move_up || move_down || move_right || move_left)
-        and player1_X){
+    if(p1.right_hand.translate_for > 0 && (move_up || move_down || move_right || move_left)){
         //translate_for se sustinski kao promenljiva ne primenjuje ni u jednoj funkciji
         //njena uloga je da "broji" koliko je ostalo do kraja translacije
         p1.right_hand.translate_for -= 0.5;
@@ -486,8 +478,11 @@ static void on_keyboard(unsigned char key, int x, int y)
 
     case 'w':
     case 'W':
+
         // Pokrece se animacija ako je globalna promenljiva move_up = 0
-        if (!move_up) {
+        //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
+        //kako igrac ne bi napustio granice terena
+        if (!move_up and p1.body.Xcenter >= -2.0 and p1.body.Zcenter >= -2.30) {
             //zapravo nije udarac vec se simulira da se noga pomera pri kretanju
             p1.left_foot.hit = true;
             left_foot_move = 1;
@@ -514,8 +509,11 @@ static void on_keyboard(unsigned char key, int x, int y)
         
     case 's':
     case 'S':
+
         //ukoliko je vrednost move_down globalne promenljive 0 pokrece se animacija
-        if (!move_down) {
+        //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
+        //kako igrac ne bi napustio granice terena
+        if (!move_down and p1.body.Xcenter <= 3.50 and p1.body.Zcenter <=3.9) {
             //nije udarac samo je isti pokret kada se krece
             p1.left_foot.hit = true;
             left_foot_move = 1;
@@ -543,9 +541,12 @@ static void on_keyboard(unsigned char key, int x, int y)
 
     case 'd':
     case 'D':
+
         //vazi sve isto kao za komande W i S samo sto se vrsi translacija za
         //odgovarajuce vrednosti
-        if (!move_right) {
+        //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
+        //kako igrac ne bi napustio granice terena
+        if (!move_right and  p1.body.Xcenter <= 3.50 and p1.body.Zcenter >= -2.30) {
             p1.left_foot.hit = true;
             left_foot_move = 1;
 
@@ -567,8 +568,10 @@ static void on_keyboard(unsigned char key, int x, int y)
 
     case 'a':
     case 'A':
-        //vazi isto kao i za W i S samo za odgovarajuce vrednosti 
-        if (!move_left) {
+        //vazi isto kao i za W i S samo za odgovarajuce vrednosti
+        //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
+        //kako igrac ne bi napustio granice terena 
+        if (!move_left and p1.body.Zcenter <= 3.7 and p1.body.Xcenter >= -2.0) {
             p1.left_foot.hit = true;
             left_foot_move = 1;
 
@@ -588,6 +591,10 @@ static void on_keyboard(unsigned char key, int x, int y)
         }
         break; 
 
-
+    case 'o':
+    case 'O':
+        //fullScreen mode
+        glutFullScreen();
+    break;
     }
 }
