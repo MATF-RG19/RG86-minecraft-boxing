@@ -49,6 +49,7 @@ void player :: draw_player(){
 
 }
 
+
 void player :: move_up(){
     head.cube_set_translate(-0.023, 0, -0.023);
     body.cube_set_translate(-0.023, 0, -0.023);

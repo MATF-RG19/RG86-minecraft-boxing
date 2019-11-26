@@ -15,6 +15,8 @@ public:
 	void cube_set_translate(double increase_X,double increase_Y,double increase_Z);
 	void cube_set_lh_hit(bool b);
 
+	//get funkcije
+
 	//ostale funkcije
 	void draw();
 
