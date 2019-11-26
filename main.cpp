@@ -5,6 +5,9 @@
 
 //dimenzije prozora
 static int window_width, window_height;
+
+//pokazivac na klasu player u vidu globalne promenljive p1
+//globalna kako bi se mogla koristiti u svim funkcijama
 player p1;
 
 static double player1_X = p1.body.Xcenter;
@@ -24,7 +27,6 @@ static int move_right;
 //podesavanja tajmera
 #define TIMER_ID 0
 #define TIMER_INTERVAL 20
-
 
 static void on_reshape(int width, int height);
 static void on_display(void);
@@ -96,6 +98,7 @@ static void on_display(void)
     glViewport(0, 0, window_width, window_height);
 
     
+    //podesavanje perspektive
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(
@@ -104,7 +107,7 @@ static void on_display(void)
             1, 50);
 
 
-    
+    //postavljanje kamere
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(

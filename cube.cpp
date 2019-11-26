@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-
+//konstruktor
 cube :: cube(double width, double height, double depth){
 	this->width = width;
 	this->height = height;
@@ -91,21 +91,26 @@ void cube :: cube_set_rotate(double Xcenter_of_rotation,double Ycenter_of_rotati
 
 }
 
+//postavljanje vrednosti promenljivih koje odredjuju boju
 void cube :: cube_set_color(double R, double G, double B){
 	this->R = R;
 	this->G = G;
 	this->B = B;
 }
+
+//postavljen dok su neke promenljive bile private, sad su public :(
 void cube :: cube_set_center(double Xcenter,double Ycenter,double Zcenter){
 	this->Xcenter = Xcenter;
 	this->Ycenter = Ycenter;
 	this->Zcenter = Zcenter;
 }
 
+//postavljanje dimenzija kocke
 void cube :: cube_set_value(double width,double height,double depth){
 	this->width = width;
 	this->height = height;
 	this->depth = depth;
 }
 
+//destruktor
 cube :: ~cube(){};

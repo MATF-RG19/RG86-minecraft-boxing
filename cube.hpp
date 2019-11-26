@@ -38,6 +38,7 @@ public:
 	bool movement;
 
 
+	//znacajne promenljive za iscrtavanje
 	double Xcenter, Ycenter, Zcenter;
 	double R,G,B;
 	double width;
