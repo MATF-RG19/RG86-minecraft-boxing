@@ -38,11 +38,17 @@ void cube :: draw(){
     	Xcenter = Xcenter + increase_X ;
     	Ycenter = Ycenter + increase_Y ;
     	Zcenter = Zcenter + increase_Z ;
+
     }
    	 
     //iscrtavanje koceke
-	glColor3f(R, G, B);
+
+    glTranslatef(global_Xcenter , global_Ycenter, global_Zcenter);
+    glRotatef(active_angle , 0, 1, 0);
+    glTranslatef(-global_Xcenter, -global_Ycenter, -global_Zcenter);
+
     glTranslatef(Xcenter, Ycenter, Zcenter);
+	glColor3f(R, G, B);
     glScalef(width, height, depth);
 
     //svaka kocka odbija razlicitu svetlost pa se ovde definisu koeficijenti odbijanja
@@ -75,6 +81,11 @@ void cube :: cube_set_translate(double increase_X,double increase_Y,double incre
 	this->increase_X = increase_X;
 	this->increase_Y = increase_Y;
 	this->increase_Z = increase_Z;
+
+    //zbog vektora preusmeravanja trebaju nam koordinate prethodne tacke
+    this->previous_Xcenter = this->Xcenter - increase_X;
+    this->previous_Ycenter = this->Ycenter - increase_Y;
+    this->previous_Zcenter = this->Zcenter - increase_Z;
 }
 
 //ranije imala ulogu, sada su sva polja public ali neka ostane, mozda zatreba :)
@@ -110,6 +121,16 @@ void cube :: cube_set_value(double width,double height,double depth){
 	this->width = width;
 	this->height = height;
 	this->depth = depth;
+}
+
+//obrisati ne koristim je
+void cube :: rotate_me(double angle){
+
+    glTranslatef(Xcenter , Ycenter, Zcenter);
+    glRotatef(angle , 0, 1, 0);
+    glTranslatef(-Xcenter, -Ycenter, -Zcenter);
+
+
 }
 
 //destruktor

@@ -15,6 +15,8 @@ public:
 	void move_left();
 	void move_right();
 
+	void translate_player();
+	void redirect(double angle, double global_Xcenter, double global_Ycenter, double global_Zcenter);
 	
 	//destruktori
 	~player();

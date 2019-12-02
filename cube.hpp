@@ -15,7 +15,8 @@ public:
 	void cube_set_translate(double increase_X,double increase_Y,double increase_Z);
 	void cube_set_lh_hit(bool b);
 
-	//get funkcije
+
+	void rotate_me(double angle);
 
 	//ostale funkcije
 	void draw();
@@ -23,10 +24,16 @@ public:
 	//destruktori
 	~cube();
 
-	//rotacije za udarac
+	//rotacije za udarac i usmeravanje
 	double Xcenter_of_rotation, Ycenter_of_rotation, Zcenter_of_rotation;
-	double rotate_for;
+	double global_Xcenter, global_Ycenter, global_Zcenter;
+	double rotate_for = 0;
+	double active_angle = 0;
 	bool rotate_end = false;
+	double angle_of_rotation = 0;
+	double direction_vector_X = 0;
+	double direction_vector_Y = 0;
+	double direction_vector_Z = 0;
 
 	//translacije za kretanje
 	double increase_X, increase_Y, increase_Z;
@@ -40,8 +47,10 @@ public:
 
 	//znacajne promenljive za iscrtavanje
 	double Xcenter, Ycenter, Zcenter;
+	double previous_Xcenter, previous_Ycenter, previous_Zcenter;
 	double R,G,B;
 	double width;
 	double height;
 	double depth;
+	double angle;
 };
