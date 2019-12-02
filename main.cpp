@@ -364,16 +364,16 @@ static void on_display(void)
             // glNormal3f(1,1,1);
 
             //glTexCoord3f(0, 0, 1);
-            glVertex3f(-5, 0, 5);
+            glVertex3f(-5, 0, 50);
 
             //glTexCoord3f(0, 0, -1);
-            glVertex3f(-5, 0, -5);
+            glVertex3f(-5, 0, -50);
 
             //glTexCoord3f(-1, 1, -1);
-            glVertex3f(-12, 4, -5);
+            glVertex3f(-120, 4, -50);
 
             //glTexCoord3f(-1, 1, 1);
-            glVertex3f(-12, 4, 5);
+            glVertex3f(-120, 4, 50);
         glEnd();
         //glBindTexture(GL_TEXTURE_2D, 0);
 
