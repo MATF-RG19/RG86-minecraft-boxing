@@ -133,16 +133,16 @@ static void initialize(void)
 
     // glGenTextures(1, names);
 
-    // glBindTexture(GL_TEXTURE_2D, names[0]);
-    // glTexParameteri(GL_TEXTURE_2D,
-    //                 GL_TEXTURE_WRAP_S, GL_CLAMP);
-    // glTexParameteri(GL_TEXTURE_2D,
-    //                 GL_TEXTURE_WRAP_T, GL_CLAMP);
-    // glTexParameteri(GL_TEXTURE_2D,
+    // glBindTexture(GL_TEXTURE_3D, names[0]);
+    // glTexParameteri(GL_TEXTURE_3D,
+    //                 GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_3D,
+    //                 GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_3D,
     //                 GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D,
+    // glTexParameteri(GL_TEXTURE_3D,
     //                 GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+    // glTexImage2D(GL_TEXTURE_3D, 0, GL_RGB,
     //              image->width - 0.5, image->height - 0.5, 0,
     //              GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
 
@@ -358,24 +358,24 @@ static void on_display(void)
     glPushMatrix();
         glLineWidth(1);        
         
-        //leva-gore tribina
+        // leva-gore tribina
         //glColor3f(1,1,1);
+        // glBindTexture(GL_TEXTURE_3D, 0);
         glBegin(GL_POLYGON);
-            // glNormal3f(1,1,1);
+            // glNormal3f(1,1,0);
 
-            //glTexCoord3f(0, 0, 1);
+            // glTexCoord3f(0, 0, 1);
             glVertex3f(-5, 0, 50);
 
-            //glTexCoord3f(0, 0, -1);
+            // glTexCoord3f(0, 0, -1);
             glVertex3f(-5, 0, -50);
 
-            //glTexCoord3f(-1, 1, -1);
+            // glTexCoord3f(-1, 1, -1);
             glVertex3f(-120, 4, -50);
 
-            //glTexCoord3f(-1, 1, 1);
+            // glTexCoord3f(-1, 1, 1);
             glVertex3f(-120, 4, 50);
         glEnd();
-        //glBindTexture(GL_TEXTURE_2D, 0);
 
     glPopMatrix();
         //desna-gore tribina
@@ -566,30 +566,30 @@ static void on_timer_movement(int value)
     //uvek okrenuti jedan ka drugome
     //pocetno slovo(x|y) oznacava vektor pocetka(x) ili kraja(y) kretanja
     //drugo slovo predstavlja koordinatu
-    // double xx = p2.body.Xcenter - p1.body.Xcenter;
-    // double yx = p2.body.Xcenter - p1.body.previous_Xcenter;
-    // double xz = p2.body.Zcenter - p1.body.Zcenter;
-    // double yz = p2.body.Zcenter - p1.body.previous_Zcenter;
+    // long double xx = p2.body.Xcenter - p1.body.Xcenter;
+    // long double yx = p2.body.Xcenter - p1.body.previous_Xcenter;
+    // long double xz = p2.body.Zcenter - p1.body.Zcenter;
+    // long double yz = p2.body.Zcenter - p1.body.previous_Zcenter;
 
 
-    // //ugao racunam prema formuli za skalarni proizvod vektora
+    //ugao racunam prema formuli za skalarni proizvod vektora
     // long double angle = (xx*yx + xz*yz)/(sqrt(xx*xx + xz*xz) * sqrt(yx*yx + yz*yz));
     // angle = acos(angle);
 
-    // //acos vraca ugao u radianima, proporciom da vracam u stepene
-    // angle = (180.0 * angle)/(3.14159);
+    //acos vraca ugao u radianima, proporciom da vracam u stepene
+    // angle = (180.0 * angle)/(3.14159265359);
 
-    // //odredjivanje orijentacije kako bih znao u kom smeru treba da rotiram igraca
-    // double y1 = p2.body.Zcenter;
-    // double y2 = p1.body.Zcenter;
-    // double y3 = p1.body.previous_Zcenter;
-    // double x1 = p2.body.Xcenter;
-    // double x2 = p1.body.Xcenter;
-    // double x3 = p1.body.previous_Xcenter;
-    // double retVal = (y2 - y1)*(x3 - x2) -(y3 - y2)*(x2 -x1);
+    //odredjivanje orijentacije kako bih znao u kom smeru treba da rotiram igraca
+    // long double y1 = p2.body.Zcenter;
+    // long double y2 = p1.body.Zcenter;
+    // long double y3 = p1.body.previous_Zcenter;
+    // long double x1 = p2.body.Xcenter;
+    // long double x2 = p1.body.Xcenter;
+    // long double x3 = p1.body.previous_Xcenter;
+    // long double retVal = (y2 - y1)*(x3 - x2) -(y3 - y2)*(x2 -x1);
 
-    // //provera orijentacije
-    // //negativno => suprotno od smera kazaljke
+    //provera orijentacije
+    //negativno => suprotno od smera kazaljke
     // if(retVal > 0)
     //     angle = -angle;
     // else if(retVal == 0)
@@ -608,7 +608,7 @@ static void on_timer_movement(int value)
         p1.left_foot.translate_for -= 0.5;
         p1.body.translate_for -= 0.5;
         p1.head.translate_for -= 0.5;
-//        p1.redirect(angle, p1.body.Xcenter, p1.body.Ycenter, p1.body.Zcenter);
+        // p1.redirect(angle, p1.body.Xcenter, p1.body.Ycenter, p1.body.Zcenter);
         //p2.redirect(angle, p2.body.Xcenter, p2.body.Ycenter, p2.body.Zcenter);
 
     }//kazemo da kretanje prestane

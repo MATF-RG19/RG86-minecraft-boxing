@@ -42,10 +42,10 @@ void cube :: draw(){
     }
    	 
     //iscrtavanje koceke
-
     glTranslatef(global_Xcenter , global_Ycenter, global_Zcenter);
     glRotatef(active_angle , 0, 1, 0);
     glTranslatef(-global_Xcenter, -global_Ycenter, -global_Zcenter);
+
 
     glTranslatef(Xcenter, Ycenter, Zcenter);
 	glColor3f(R, G, B);
