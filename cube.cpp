@@ -25,6 +25,7 @@ void cube :: draw(){
     	glTranslatef(Xcenter_of_rotation , Ycenter_of_rotation + 0.1, Zcenter_of_rotation+0.1);
         glRotatef(rotate_for , 1, 0, 0);
         glTranslatef(-Xcenter_of_rotation, -Ycenter_of_rotation-0.1, -Zcenter_of_rotation-0.1);
+        
     }
 
     //ako je pritisnuto odgovarajuce dugme vrednost movement=true
@@ -49,6 +50,9 @@ void cube :: draw(){
 
     glTranslatef(Xcenter, Ycenter, Zcenter);
 	glColor3f(R, G, B);
+    if(guard and rotate_end){
+        glScalef(1,0.5,1);   
+    }
     glScalef(width, height, depth);
 
     //svaka kocka odbija razlicitu svetlost pa se ovde definisu koeficijenti odbijanja
@@ -74,6 +78,7 @@ void cube :: draw(){
 
     glPopMatrix();
     
+
 }
 
 //za koliko treba pomeriti kocku

@@ -122,6 +122,13 @@ void player :: redirect(double angle,double global_Xcenter, double global_Ycente
 
 }
 
+void player :: guard_me(bool protect){
+
+    this->left_hand.guard = protect;
+    this->right_hand.guard = protect;
+
+}
+
 void player :: move_up(){
     head.cube_set_translate(-0.023, 0, -0.023);
     body.cube_set_translate(-0.023, 0, -0.023);

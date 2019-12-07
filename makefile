@@ -4,8 +4,9 @@ CFLAGS  = -g -ansi -Wall -I/usr/X11R6/include -I/usr/pkg/include
 LDFLAGS = -L/usr/X11R6/lib -L/usr/pkg/lib
 LDLIBS  = -lglut -lGLU -lGL -lm
 
-$(PROGRAM): cube.o player.o main.o
-	$(CC) $(LDFLAGS) -o $(PROGRAM) cube.o player.o main.o $(LDLIBS)
+
+$(PROGRAM): cube.o player.o image.o main.o
+	$(CC) $(LDFLAGS) -o $(PROGRAM) cube.o player.o image.o main.o $(LDLIBS)
 
 .PHONY: clean dist
 

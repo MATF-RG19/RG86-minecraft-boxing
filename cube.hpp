@@ -43,6 +43,7 @@ public:
 	//uslovi
 	bool hit;
 	bool movement;
+	bool guard = false;
 
 
 	//znacajne promenljive za iscrtavanje

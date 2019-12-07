@@ -9,6 +9,7 @@
 
 #define FILENAME0 "textura.bmp"
 
+
 /* Identifikatori tekstura. */
 static GLuint names[1];
 
@@ -33,6 +34,7 @@ static int move_up;
 static int move_down;
 static int move_left;
 static int move_right; 
+static int guard;
 
 //drugi igrac
 static int left_hand_punch2;
@@ -43,6 +45,7 @@ static int move_up2;
 static int move_down2;
 static int move_left2;
 static int move_right2; 
+static int guard2;
 
 
 //podesavanja tajmera
@@ -52,6 +55,7 @@ static int move_right2;
 static void on_reshape(int width, int height);
 static void on_display(void);
 static void on_keyboard(unsigned char key, int x, int y);
+static void on_Upkeyboard(unsigned char key, int x, int y);
 static void on_timer(int value);
 static void glutSpecialInput(int key, int x, int y);
 
@@ -73,11 +77,13 @@ int main(int argc, char **argv)
     glutReshapeFunc(on_reshape);
     glutDisplayFunc(on_display);
     glutKeyboardFunc(on_keyboard);
+    glutKeyboardUpFunc(on_Upkeyboard);
     glutSpecialFunc(glutSpecialInput);
+    //glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
 
     
     
-    glClearColor(0.75, 0.75, 0.75, 0);
+    glClearColor(1, 1, 1, 0);
     glEnable(GL_DEPTH_TEST);
     glLineWidth(2);
 
@@ -105,48 +111,68 @@ int main(int argc, char **argv)
 
     initialize();
 
+    //fullscreen mode
+    glutFullScreen();
     glutMainLoop();
 
     return 0;
 }
 
 
+//funkcija po uzoru na funkciju inicijalizacije sa vezbi
 static void initialize(void)
 {
-    // Image * image;
+    //instanciranje objekta tipa image
+    Image * image;
 
-    // glClearColor(0, 0, 0, 0);
+    glClearColor(0, 0, 0, 0);
 
-    // glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 
-    // glEnable(GL_TEXTURE_2D);
+    glEnable(GL_TEXTURE_2D);
 
-    // glTexEnvf(GL_TEXTURE_ENV,
-    //           GL_TEXTURE_ENV_MODE,
-    //           GL_REPLACE);
+    glTexEnvf(GL_TEXTURE_ENV,
+              GL_TEXTURE_ENV_MODE,
+              GL_REPLACE);
 
     
-    // image = image_init(0, 0);
+    //inicijalizacija slike    
+    image = image_init(0, 0);
 
-    // std::string s = "tekstura.bmp";
-    // image_read(image, s.c_str());
+    //trazimo da nam se obezbedi 1 id i smesti u niz names kako bismo koristili teksturu
+    //niz se nalazi na ovom mestu jer sam planirao da ubacim 2 teksture, od toga sam
+    //za sada odustao pa i nije neophodan niz, mogla je promenljiva
+    glGenTextures(1, names);
 
-    // glGenTextures(1, names);
+    //ovde je bio problem konverzije string tipa u char*
+    //verovatno zbog toga sto je biblioteka image pisana u c-u
+    //kako bi radilo u image.c sam promenio da drugi argument fje image_read bude
+    //konstantan char*
+    //a onda sam na internetu pronasao metodu c_str() nad objektima tipa string
+    std::string s = "tekstura.bmp";
+    image_read(image, s.c_str());
 
-    // glBindTexture(GL_TEXTURE_3D, names[0]);
-    // glTexParameteri(GL_TEXTURE_3D,
-    //                 GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_3D,
-    //                 GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_3D,
-    //                 GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_3D,
-    //                 GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexImage2D(GL_TEXTURE_3D, 0, GL_RGB,
-    //              image->width - 0.5, image->height - 0.5, 0,
-    //              GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+    
+    //podesavanja teksture
+    //pocinjemo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, names[0]);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image->width, image->height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
 
-    // image_done(image);
+    //zavrsavamo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    //uklanjamo dinamicki alociran objekat
+    image_done(image);
 
 }
 
@@ -160,8 +186,6 @@ static void on_reshape(int width, int height)
 
 static void on_display(void)
 {
-   
-
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -187,6 +211,47 @@ static void on_display(void)
             0, 1, 0
         );
 
+    //reflektori ne treba da budu osvetljeni
+    glDisable(GL_LIGHT0);
+
+    //tribine
+    // levi reflektor
+    glBindTexture(GL_TEXTURE_2D, names[0]);
+        glBegin(GL_QUADS);
+            glNormal3f(0,1,0);
+
+            glTexCoord2f(0.1, 0);
+            glVertex3f(-5, 0, 6.7);
+ 
+            glTexCoord2f(1,0);
+            glVertex3f(-5, 0, -5);
+
+            glTexCoord2f(1,0.95);
+            glVertex3f(-6, 6, -5);
+
+            glTexCoord2f(0.1,0.95);
+            glVertex3f(-6, 6, 6.7);
+        glEnd();
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    //desni reflektor
+    glBindTexture(GL_TEXTURE_2D, names[0]);
+        glBegin(GL_QUADS);
+            glTexCoord2f(1,0);
+            glVertex3f(-7, 0, -5);
+
+            glTexCoord2f(0.1,0);
+            glVertex3f(7, 0, -5);
+
+            glTexCoord2f(0,0.95);
+            glVertex3f(7, 6, -6);
+
+            glTexCoord2f(1,0.95);
+            glVertex3f(-7, 6, -6);
+        glEnd();
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glEnable(GL_LIGHT0);
     
     //plava svetlost se najvise odbija od rina
     GLfloat ambient_coeffs[] = { 0.3, 0.6, 0.95, 1 };
@@ -333,82 +398,12 @@ static void on_display(void)
     glMaterialfv(GL_FRONT, GL_SPECULAR,  specular_coeffsC);
     glMaterialf(GL_FRONT,  GL_SHININESS, shininess);
 
-    //pod
-    glPushMatrix();
-
-
-        glLineWidth(1);        
-        
-        glColor3f(1,1,1);
-        glBegin(GL_POLYGON);
-            glVertex3f(-100, 0, 100);
-            glVertex3f(100, 0, 100);
-            glVertex3f(100, 0, -100);
-            glVertex3f(-100, 0, -100);
-        glEnd();
-
-    glPopMatrix();
-
-    glMaterialfv(GL_FRONT, GL_AMBIENT,   ambient_coeffsS);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE,   diffuse_coeffsS);
-    glMaterialfv(GL_FRONT, GL_SPECULAR,  specular_coeffsS);
-    glMaterialf(GL_FRONT,  GL_SHININESS, shininess);
-
-    //tribine
-    glPushMatrix();
-        glLineWidth(1);        
-        
-        // leva-gore tribina
-        //glColor3f(1,1,1);
-        // glBindTexture(GL_TEXTURE_3D, 0);
-        glBegin(GL_POLYGON);
-            // glNormal3f(1,1,0);
-
-            // glTexCoord3f(0, 0, 1);
-            glVertex3f(-5, 0, 50);
-
-            // glTexCoord3f(0, 0, -1);
-            glVertex3f(-5, 0, -50);
-
-            // glTexCoord3f(-1, 1, -1);
-            glVertex3f(-120, 4, -50);
-
-            // glTexCoord3f(-1, 1, 1);
-            glVertex3f(-120, 4, 50);
-        glEnd();
-
-    glPopMatrix();
-        //desna-gore tribina
-        glColor3f(1,1,1);
-        glBegin(GL_POLYGON);
-            glVertex3f(-100, 0, -5);
-            glVertex3f(100, 0, -5);
-            glVertex3f(100, 10, -8);
-            glVertex3f(-100, 10, -8);
-        glEnd();
-
-        //leva-dole tribina
-        glColor3f(1,1,1);
-        glBegin(GL_POLYGON);
-            glVertex3f(-100, 0, 5);
-            glVertex3f(100, 0, 5);
-            glVertex3f(100, 10, 8);
-            glVertex3f(-100, 10, 8);
-        glEnd();
-
-        glColor3f(1,1,1);
-        glBegin(GL_POLYGON);
-            glVertex3f(5, 0, 100);
-            glVertex3f(5, 0, -100);
-            glVertex3f(8, 10, -100);
-            glVertex3f(8, 10, 100);
-        glEnd();
-
-
-
+     
+    
     //iscrtavanje igraca
     p1.draw_player();
     p2.draw_player();
+
 
 
     glutSwapBuffers();
@@ -804,6 +799,116 @@ static void on_timer_movement_legs2(int value)
     }
 }
 
+
+//tajmer za drzanje bloka igraca
+static void on_timer_guard2(int value)
+{
+    
+    if (value != TIMER_ID)
+        return;
+
+    //izgleda kao pokret ruke uz dodatak provere da li ruku treba saviti u gard
+    if(p2.left_hand.rotate_for >= -100 && !p2.left_hand.rotate_end && 
+            p2.left_hand.guard){
+        p2.left_hand.rotate_for -= 10;
+        //ako je rotacija dosla do kraja treba stati
+        if(p2.left_hand.rotate_for == -100)
+            p2.left_hand.rotate_end = true;
+    }//vracamo ruku nazad ako smo prekinuli drzanje bloka
+    else if(p2.left_hand.rotate_for <0){
+        if(!p2.left_hand.guard)
+            p2.left_hand.rotate_for += 10;
+    }//resetujemo odgovarajuce vrednosti kako bi se pokret mogao ponoviti
+    else{
+        p2.left_hand.hit = false;
+        p2.left_hand.rotate_for = 0;
+        left_hand_punch2 = 0;
+        guard2 = 0;
+        p2.left_hand.rotate_end= false; 
+    }
+
+    //isto kao za left_hand :)
+    if(p2.right_hand.rotate_for >= -100 && !p2.right_hand.rotate_end &&
+            p2.right_hand.guard){
+        p2.right_hand.rotate_for -= 10;
+        if(p2.right_hand.rotate_for == -100)
+            p2.right_hand.rotate_end = true;
+    }
+    else if(p2.right_hand.rotate_for <0){
+        if(!p2.right_hand.guard)
+            p2.right_hand.rotate_for += 10;
+    }
+    else{
+        p2.right_hand.hit = false;
+        p2.right_hand.rotate_for = 0;
+        right_hand_punch2 = 0;
+        guard2 = 0;
+        p2.right_hand.rotate_end= false; 
+    }
+
+
+
+    glutPostRedisplay();
+
+    if (guard2) {
+        glutTimerFunc(TIMER_INTERVAL, on_timer_guard2, TIMER_ID);
+    }
+}
+
+
+//tajmer funkcija kao za prethodnog igraca
+static void on_timer_guard(int value)
+{
+    
+    if (value != TIMER_ID)
+        return;
+
+    //izgleda kao pokret ruke uz dodatak provere da li ruku treba saviti u gard
+    if(p1.left_hand.rotate_for >= -100 && !p1.left_hand.rotate_end && 
+            p1.left_hand.guard){
+        p1.left_hand.rotate_for -= 10;
+        //ako je rotacija dosla do kraja treba stati
+        if(p1.left_hand.rotate_for == -100)
+            p1.left_hand.rotate_end = true;
+    }//vracamo ruku nazad ako smo prekinuli drzanje bloka
+    else if(p1.left_hand.rotate_for <0){
+        if(!p1.left_hand.guard)
+            p1.left_hand.rotate_for += 10;
+    }//resetujemo odgovarajuce vrednosti kako bi se pokret mogao ponoviti
+    else{
+        p1.left_hand.hit = false;
+        p1.left_hand.rotate_for = 0;
+        left_hand_punch = 0;
+        guard = 0;
+        p1.left_hand.rotate_end= false; 
+    }
+
+    //isto kao za left_hand :)
+    if(p1.right_hand.rotate_for >= -100 && !p1.right_hand.rotate_end &&
+            p1.right_hand.guard){
+        p1.right_hand.rotate_for -= 10;
+        if(p1.right_hand.rotate_for == -100)
+            p1.right_hand.rotate_end = true;
+    }
+    else if(p1.right_hand.rotate_for <0){
+        if(!p1.right_hand.guard)
+            p1.right_hand.rotate_for += 10;
+    }
+    else{
+        p1.right_hand.hit = false;
+        p1.right_hand.rotate_for = 0;
+        right_hand_punch = 0;
+        guard = 0;
+        p1.right_hand.rotate_end= false; 
+    }
+
+     glutPostRedisplay();
+
+    if (guard) {
+        glutTimerFunc(TIMER_INTERVAL, on_timer_guard, TIMER_ID);
+    }
+}
+
 static void on_keyboard(unsigned char key, int x, int y)
 {
 
@@ -880,7 +985,7 @@ static void on_keyboard(unsigned char key, int x, int y)
         //ukoliko je vrednost move_down globalne promenljive 0 pokrece se animacija
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_down and p1.body.Xcenter <= 3.50 and p1.body.Zcenter <=3.9) {
+        if (!move_down and p1.body.Xcenter <= 3.50 and p1.body.Zcenter <=3.7) {
             //nije udarac samo je isti pokret kada se krece
             p1.left_foot.hit = true;
             left_foot_move = 1;
@@ -987,12 +1092,50 @@ static void on_keyboard(unsigned char key, int x, int y)
         }
         break;
 
-
-    case 'o':
-    case 'O':
-        //fullScreen mode
-        glutFullScreen();
+    case '8':{
+            //ako hocemo da nam igrac drzi gard na pritisak tastera
+            //fjom postavljenom u igracu kazemo levoj i desnoj ruci da se saviju
+            //pise "punch" jer je pokret isti kao za udarac ruke uz dodatak savijanja
+            p2.guard_me(true);
+            if (!left_hand_punch2 and !right_hand_punch2 and !guard2) {
+            //kazemo da se vrednost za udarac leve ruke stavi na true
+            //u svakom iscrtavanju se proverava da li je ta vrednost true
+            //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
+            p2.left_hand.hit = true;
+            p2.right_hand.hit = true;
+            //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
+            //treba da pocne sa animacijom
+            left_hand_punch2 = 1;
+            right_hand_punch2 = 1;
+            guard2 = 1;
+            glutTimerFunc(TIMER_INTERVAL, on_timer_guard2, TIMER_ID);
+        }
+            
+    }
     break;
+
+    case 'y':
+    case 'Y':{
+            //ako hocemo da nam igrac drzi gard na pritisak tastera
+            //fjom postavljenom u igracu kazemo levoj i desnoj ruci da se saviju
+            //pise "punch" jer je pokret isti kao za udarac ruke uz dodatak savijanja
+            p1.guard_me(true);
+            if (!left_hand_punch and !right_hand_punch and !guard) {
+            //kazemo da se vrednost za udarac leve ruke stavi na true
+            //u svakom iscrtavanju se proverava da li je ta vrednost true
+            //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
+            p1.left_hand.hit = true;
+            p1.right_hand.hit = true;
+            //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
+            //treba da pocne sa animacijom
+            left_hand_punch = 1;
+            right_hand_punch = 1;
+            guard = 1;
+            glutTimerFunc(TIMER_INTERVAL, on_timer_guard, TIMER_ID);
+        }
+    }
+    break;
+   
     }
 }
 
@@ -1036,7 +1179,7 @@ static void glutSpecialInput(int key, int x, int y){
         //ukoliko je vrednost move_down globalne promenljive 0 pokrece se animacija
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_down2 and p2.body.Xcenter <= 3.50 and p2.body.Zcenter <=3.9) {
+        if (!move_down2 and p2.body.Xcenter <= 3.50 and p2.body.Zcenter <=3.7) {
             //nije udarac samo je isti pokret kada se krece
             p2.left_foot.hit = true;
             left_foot_move2 = 1;
@@ -1117,5 +1260,28 @@ static void glutSpecialInput(int key, int x, int y){
         break; 
 
     }
+
+}
+
+//celokupna funkcija radi na "on_release" dogadjaje
+//slicno kao on_keyboard uz to sto se dogadjaj "okida" kada se dugme "pusti" 
+static void on_Upkeyboard(unsigned char key, int x, int y){
+
+    switch(key){
+
+        case 'y':
+        case 'Y':{
+                //za prestanak garda i vracanje ruke u pocetni polozaj
+                //nije neophodno raditi nista osim ove naredbe jer se u odgovarajucoj
+                //timer funkciji nalazi samo provera da li igrac drzi gard ili ne
+                p1.guard_me(false);
+        }
+
+        case '8':{
+                //isto kao za igraca1 na komandu "Y"
+                p2.guard_me(false);
+            }
+
+  }
 
 }

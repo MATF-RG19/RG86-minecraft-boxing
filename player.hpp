@@ -10,6 +10,7 @@ public:
 
 	//funkcije
 	void draw_player();
+
 	void move_up();
 	void move_down();
 	void move_left();
@@ -18,6 +19,8 @@ public:
 	void translate_player();
 	void redirect(double angle, double global_Xcenter, double global_Ycenter, double global_Zcenter);
 	
+	void guard_me(bool protect);
+
 	//destruktori
 	~player();
 
