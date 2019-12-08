@@ -32,9 +32,15 @@ void cube :: draw(){
     //treba azurirati centre rotacije kocke i centre kocke kako bi se pokret
     //identicno mogao izvoditi u svakom delu scene
     if(movement){
+        // previous_Xcenter = Xcenter;
+        // previous_Ycenter = Ycenter;
+        // previous_Zcenter = Zcenter;
+
     	Xcenter_of_rotation += increase_X;
     	Ycenter_of_rotation += increase_Y;
     	Zcenter_of_rotation += increase_Z;
+
+
     	//glTranslatef(increase_X/translate_for, increase_Y/translate_for, increase_Z/translate_for);
     	Xcenter = Xcenter + increase_X ;
     	Ycenter = Ycenter + increase_Y ;
@@ -88,9 +94,9 @@ void cube :: cube_set_translate(double increase_X,double increase_Y,double incre
 	this->increase_Z = increase_Z;
 
     //zbog vektora preusmeravanja trebaju nam koordinate prethodne tacke
-    this->previous_Xcenter = this->Xcenter - increase_X;
-    this->previous_Ycenter = this->Ycenter - increase_Y;
-    this->previous_Zcenter = this->Zcenter - increase_Z;
+        // this->previous_Xcenter = this->Xcenter;
+        // this->previous_Ycenter = this->Ycenter;
+        // this->previous_Zcenter = this->Zcenter;
 }
 
 //ranije imala ulogu, sada su sva polja public ali neka ostane, mozda zatreba :)
@@ -119,6 +125,9 @@ void cube :: cube_set_center(double Xcenter,double Ycenter,double Zcenter){
 	this->Xcenter = Xcenter;
 	this->Ycenter = Ycenter;
 	this->Zcenter = Zcenter;
+    this->previous_Xcenter = Xcenter;
+    this->previous_Ycenter = Ycenter;
+    this->previous_Zcenter = Zcenter;
 }
 
 //postavljanje dimenzija kocke

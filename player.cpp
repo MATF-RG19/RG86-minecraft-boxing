@@ -89,12 +89,12 @@ void player :: translate_player(){
 
 void player :: redirect(double angle,double global_Xcenter, double global_Ycenter, double global_Zcenter){
 
-    head.active_angle += angle;
-    body.active_angle += angle;
-    left_foot.active_angle += angle;
-    right_foot.active_angle += angle;
-    left_hand.active_angle += angle;
-    right_hand.active_angle += angle;
+    head.active_angle = angle;
+    body.active_angle = angle;
+    left_foot.active_angle = angle;
+    right_foot.active_angle = angle;
+    left_hand.active_angle = angle;
+    right_hand.active_angle = angle;
 
     head.global_Xcenter = global_Xcenter;
     head.global_Ycenter = global_Ycenter;

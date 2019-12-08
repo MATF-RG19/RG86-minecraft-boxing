@@ -6,26 +6,22 @@
 #include "player.hpp"
 #include "image.h"
 
-
-#define FILENAME0 "textura.bmp"
-
-
-/* Identifikatori tekstura. */
-static GLuint names[1];
-
 //dimenzije prozora
 static int window_width, window_height;
 
-//pokazivac na klasu player u vidu globalne promenljive p1
-//globalna kako bi se mogla koristiti u svim funkcijama
-player p1;
-player p2;
+#define FILENAME0 "textura.bmp"
+// Identifikatori tekstura.
+static GLuint names[2];
 
 //centar ringa
 double ring_centerX = 1.25;
 double ring_centerZ = 1.25;
 
+double angle;
+bool first = true;
+
 //prvi igrac
+player p1;
 static int left_hand_punch;
 static int right_hand_punch; 
 static int left_foot_move;
@@ -37,6 +33,7 @@ static int move_right;
 static int guard;
 
 //drugi igrac
+player p2;
 static int left_hand_punch2;
 static int right_hand_punch2; 
 static int left_foot_move2;
@@ -48,10 +45,12 @@ static int move_right2;
 static int guard2;
 
 
+
 //podesavanja tajmera
 #define TIMER_ID 0
 #define TIMER_INTERVAL 20
 
+//callback funkcije
 static void on_reshape(int width, int height);
 static void on_display(void);
 static void on_keyboard(unsigned char key, int x, int y);
@@ -59,6 +58,7 @@ static void on_Upkeyboard(unsigned char key, int x, int y);
 static void on_timer(int value);
 static void glutSpecialInput(int key, int x, int y);
 
+//funkcija za inicijalizaciju tekstura
 static void initialize(void);
 
 
@@ -142,7 +142,7 @@ static void initialize(void)
     //trazimo da nam se obezbedi 1 id i smesti u niz names kako bismo koristili teksturu
     //niz se nalazi na ovom mestu jer sam planirao da ubacim 2 teksture, od toga sam
     //za sada odustao pa i nije neophodan niz, mogla je promenljiva
-    glGenTextures(1, names);
+    glGenTextures(2, names);
 
     //ovde je bio problem konverzije string tipa u char*
     //verovatno zbog toga sto je biblioteka image pisana u c-u
@@ -170,6 +170,30 @@ static void initialize(void)
 
     //zavrsavamo rad nad teksturom
     glBindTexture(GL_TEXTURE_2D, 0);
+
+
+
+    std::string s2 = "tekstura2.bmp";
+    image_read(image, s2.c_str());
+ 
+    //podesavanja teksture
+    //pocinjemo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, names[1]);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image->width, image->height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+
+    //zavrsavamo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, 0);
+
 
     //uklanjamo dinamicki alociran objekat
     image_done(image);
@@ -250,6 +274,26 @@ static void on_display(void)
             glVertex3f(-7, 6, -6);
         glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    // glPushMatrix();
+    // gluOrtho(5,10, 1, 2);
+    // glBindTexture(GL_TEXTURE_2D, names[1]);
+    //     glBegin(GL_POLYGON);
+    //         glTexCoord2f(0,0);
+    //         glVertex2f(2,1);
+
+    //         glTexCoord2f(1,0);
+    //         glVertex2f(7,1);
+
+    //         glTexCoord2f(1,1);
+    //         glVertex2f(7,2);
+
+    //         glTexCoord2f(0,1);
+    //         glVertex2f(2,2);
+    //     glEnd();
+    // glBindTexture(GL_TEXTURE_2D, 0);
+    // glPopMatrix();
 
     glEnable(GL_LIGHT0);
     
@@ -397,8 +441,6 @@ static void on_display(void)
     glMaterialfv(GL_FRONT, GL_DIFFUSE,   diffuse_coeffsC);
     glMaterialfv(GL_FRONT, GL_SPECULAR,  specular_coeffsC);
     glMaterialf(GL_FRONT,  GL_SHININESS, shininess);
-
-     
     
     //iscrtavanje igraca
     p1.draw_player();
@@ -557,39 +599,23 @@ static void on_timer_movement(int value)
     if (value != TIMER_ID)
         return;
 
-    //neophodno mi je da odredim ugao za koji rotiram igraca kako bi ostali
-    //uvek okrenuti jedan ka drugome
-    //pocetno slovo(x|y) oznacava vektor pocetka(x) ili kraja(y) kretanja
-    //drugo slovo predstavlja koordinatu
-    // long double xx = p2.body.Xcenter - p1.body.Xcenter;
-    // long double yx = p2.body.Xcenter - p1.body.previous_Xcenter;
-    // long double xz = p2.body.Zcenter - p1.body.Zcenter;
-    // long double yz = p2.body.Zcenter - p1.body.previous_Zcenter;
+
+    //VELIKA ZAHVALNOST KOLEGI FILIPU BOZOVICU NA POMOCI OKO RAZRESENJA
+    //BAGA KOJI JE UZROKOVAO LOSE ROTIRANJE IGRACA 
+    double x = p2.body.Xcenter-p1.body.Xcenter;
+    double z = p2.body.Zcenter - p1.body.Zcenter;
+
+    angle = acos(z/(sqrt(x*x + z*z)));
+
+//    printf("%lf\n", angle);
+    if(x > 0)
+        angle =  180.0 * angle/M_PI;
+    else
+        angle = - 180.0 * angle/M_PI;
 
 
-    //ugao racunam prema formuli za skalarni proizvod vektora
-    // long double angle = (xx*yx + xz*yz)/(sqrt(xx*xx + xz*xz) * sqrt(yx*yx + yz*yz));
-    // angle = acos(angle);
 
-    //acos vraca ugao u radianima, proporciom da vracam u stepene
-    // angle = (180.0 * angle)/(3.14159265359);
-
-    //odredjivanje orijentacije kako bih znao u kom smeru treba da rotiram igraca
-    // long double y1 = p2.body.Zcenter;
-    // long double y2 = p1.body.Zcenter;
-    // long double y3 = p1.body.previous_Zcenter;
-    // long double x1 = p2.body.Xcenter;
-    // long double x2 = p1.body.Xcenter;
-    // long double x3 = p1.body.previous_Xcenter;
-    // long double retVal = (y2 - y1)*(x3 - x2) -(y3 - y2)*(x2 -x1);
-
-    //provera orijentacije
-    //negativno => suprotno od smera kazaljke
-    // if(retVal > 0)
-    //     angle = -angle;
-    // else if(retVal == 0)
-    //     angle = 0;
-
+        
     //posto se svi delovi tela pomeraju zajedno, uzimam bilo koji deo za proveru
     //ovde sam uzeo desnu ruku i proveravam koliko je jos rotacije preostalo da se
     //izvrsi tako sto rotacija ide od 5 pa se smanjuje do 0 cime se postize efekat
@@ -603,9 +629,8 @@ static void on_timer_movement(int value)
         p1.left_foot.translate_for -= 0.5;
         p1.body.translate_for -= 0.5;
         p1.head.translate_for -= 0.5;
-        // p1.redirect(angle, p1.body.Xcenter, p1.body.Ycenter, p1.body.Zcenter);
-        //p2.redirect(angle, p2.body.Xcenter, p2.body.Ycenter, p2.body.Zcenter);
-
+        p1.redirect(angle, p1.body.Xcenter, p1.body.Ycenter, p1.body.Zcenter);
+        p2.redirect(angle, p2.body.Xcenter, p2.body.Ycenter, p2.body.Zcenter);
     }//kazemo da kretanje prestane
     else{
         p1.head.movement = false;
@@ -700,6 +725,17 @@ static void on_timer_movement2(int value)
     if (value != TIMER_ID)
         return;
 
+    double x = p2.body.Xcenter-p1.body.Xcenter;
+    double z = p2.body.Zcenter - p1.body.Zcenter;
+
+    angle = acos(z/(sqrt(x*x + z*z)));
+
+//    printf("%lf\n", angle);
+    if(x > 0)
+        angle =  180.0 * angle/M_PI;
+    else
+        angle = - 180.0 * angle/M_PI;
+
 
     //posto se svi delovi tela pomeraju zajedno, uzimam bilo koji deo za proveru
     //ovde sam uzeo desnu ruku i proveravam koliko je jos rotacije preostalo da se
@@ -714,6 +750,8 @@ static void on_timer_movement2(int value)
         p2.left_foot.translate_for -= 0.5;
         p2.body.translate_for -= 0.5;
         p2.head.translate_for -= 0.5;
+        p1.redirect(angle, p1.body.Xcenter, p1.body.Ycenter, p1.body.Zcenter);
+        p2.redirect(angle, p2.body.Xcenter, p2.body.Ycenter, p2.body.Zcenter);
     }//kazemo da kretanje prestane
     else{
         p2.head.movement = false;
@@ -1276,11 +1314,13 @@ static void on_Upkeyboard(unsigned char key, int x, int y){
                 //timer funkciji nalazi samo provera da li igrac drzi gard ili ne
                 p1.guard_me(false);
         }
+        break;
 
         case '8':{
                 //isto kao za igraca1 na komandu "Y"
                 p2.guard_me(false);
             }
+        break;
 
   }
 
