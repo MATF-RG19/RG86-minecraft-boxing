@@ -1,4 +1,15 @@
 #include "player.hpp"
+#include<iostream>
+#include<math.h>
+
+/*!!!!!! POKUSATI !!!!!!!
+
+    -Pokusati da se centri rotacije postave u odnosu na telo
+    -Ukloniti funkcije za centre. Raditi preko direktnog postavljanja vrednosti
+     polja
+*/
+
+
 
 player :: player(){
 
@@ -16,23 +27,23 @@ player :: player(){
     left_foot.cube_set_value(0.2, 0.7, 0.3);
     left_foot.cube_set_color(0.95, 0.95, 0);
     left_foot.cube_set_center(0.85, 0.8, 0.7);
-    left_foot.cube_set_rotate(0.65, 1.02 , 0.55);
+    left_foot.cube_set_rotate(0.85, 1.02 , 0.55);
 
     right_foot.cube_set_value(0.2, 0.7, 0.3);
     right_foot.cube_set_color(0.95, 0.95, 0);
     right_foot.cube_set_center(0.55, 0.8, 0.7);
-    right_foot.cube_set_rotate(0.57, 1.02 , 0.55);
+    right_foot.cube_set_rotate(0.55, 1.02 , 0.55);
     
     //ruke
     left_hand.cube_set_value(0.12, 0.7, 0.2);
     left_hand.cube_set_color(0, 0, 0);
     left_hand.cube_set_center(1.01, 1.4, 0.7);
-    left_hand.cube_set_rotate(1.72, 1.52 , 0.55);
+    left_hand.cube_set_rotate(1.01, 1.52 , 0.7);
 
     right_hand.cube_set_value(0.12, 0.7, 0.2);
     right_hand.cube_set_color(0, 0, 0);
     right_hand.cube_set_center(0.39, 1.4, 0.7);
-    right_hand.cube_set_rotate(0.52, 1.52 , 0.55);
+    right_hand.cube_set_rotate(0.39, 1.52 , 0.7);
 
     player_center = 1.7;
 
@@ -42,10 +53,10 @@ void player :: draw_player(){
 
     head.draw();
     body.draw();
-    left_foot.draw();
-    right_foot.draw();
     left_hand.draw();
     right_hand.draw();
+    left_foot.draw();
+    right_foot.draw();
 
 }
 
@@ -64,23 +75,26 @@ void player :: translate_player(){
         left_foot.cube_set_value(0.2, 0.7, 0.3);
         left_foot.cube_set_color(0, 1, 0);
         left_foot.cube_set_center(0.85, 0.8, 1.7);
-        left_foot.cube_set_rotate(1.65, 1.02 , 1.55);
+        left_foot.cube_set_rotate(0.85, 1.02 , 1.7);
+
 
         right_foot.cube_set_value(0.2, 0.7, 0.3);
         right_foot.cube_set_color(0, 1, 0);
         right_foot.cube_set_center(0.55, 0.8, 1.7);
-        right_foot.cube_set_rotate(1.57, 1.02 , 1.55);
+        right_foot.cube_set_rotate(0.55, 1.02 , 1.7);
         
         //ruke
         left_hand.cube_set_value(0.12, 0.7, 0.2);
         left_hand.cube_set_color(0, 0, 0);
         left_hand.cube_set_center(1.01, 1.4, 1.7);
-        left_hand.cube_set_rotate(1.72, 1.52 , 1.55);
+        left_hand.cube_set_rotate(1.01, 1.52 , 1.7);
 
         right_hand.cube_set_value(0.12, 0.7, 0.2);
         right_hand.cube_set_color(0, 0, 0);
         right_hand.cube_set_center(0.39, 1.4, 1.7);
-        right_hand.cube_set_rotate(1.52, 1.52 , 1.55);
+        right_hand.cube_set_rotate(0.39, 1.52 , 1.7);
+
+
 
         player_center = 1.7;
     
@@ -115,10 +129,14 @@ void player :: redirect(double angle,double global_Xcenter, double global_Ycente
     left_hand.global_Xcenter = global_Xcenter;
     left_hand.global_Ycenter = global_Ycenter;
     left_hand.global_Zcenter = global_Zcenter;
+    left_hand.Xcenter_of_rotation = global_Xcenter + 0.023*cos(angle);
+    left_hand.Zcenter_of_rotation = global_Zcenter + 0.023*sin(angle);
 
     right_hand.global_Xcenter = global_Xcenter;
     right_hand.global_Ycenter = global_Ycenter;
     right_hand.global_Zcenter = global_Zcenter;
+    right_hand.Xcenter_of_rotation = global_Xcenter + 0.023*cos(angle);
+    right_hand.Zcenter_of_rotation = global_Zcenter + 0.023*sin(angle);
 
 }
 
@@ -126,6 +144,22 @@ void player :: guard_me(bool protect){
 
     this->left_hand.guard = protect;
     this->right_hand.guard = protect;
+
+}
+
+void player :: set_axes(double x, double z){
+
+    left_hand.X_axes = x;
+    left_hand.Z_axes = z;
+
+    right_hand.X_axes = x;
+    right_hand.Z_axes = z;
+
+    left_foot.X_axes = x;
+    left_foot.Z_axes = z;
+
+    right_foot.X_axes = x;
+    right_foot.Z_axes = z;
 
 }
 

@@ -16,26 +16,10 @@ void cube :: draw(){
 
     glPushMatrix();
 
-    
-    //ako smo pritisnuli dugme koje izaziva udarac vrednost promenljive hit=true
-    //udarac se sastoji od rotacije kocke oko neke tacke
-    //rotacija oko tacke: translacija u tacku + rotacija + vracanje translacije u
-    //koordinatni pocetak
-    if(hit){
-    	glTranslatef(Xcenter_of_rotation , Ycenter_of_rotation + 0.1, Zcenter_of_rotation+0.1);
-        glRotatef(rotate_for , 1, 0, 0);
-        glTranslatef(-Xcenter_of_rotation, -Ycenter_of_rotation-0.1, -Zcenter_of_rotation-0.1);
-        
-    }
-
     //ako je pritisnuto odgovarajuce dugme vrednost movement=true
     //treba azurirati centre rotacije kocke i centre kocke kako bi se pokret
     //identicno mogao izvoditi u svakom delu scene
     if(movement){
-        // previous_Xcenter = Xcenter;
-        // previous_Ycenter = Ycenter;
-        // previous_Zcenter = Zcenter;
-
     	Xcenter_of_rotation += increase_X;
     	Ycenter_of_rotation += increase_Y;
     	Zcenter_of_rotation += increase_Z;
@@ -47,6 +31,19 @@ void cube :: draw(){
     	Zcenter = Zcenter + increase_Z ;
 
     }
+    
+    //ako smo pritisnuli dugme koje izaziva udarac vrednost promenljive hit=true
+    //udarac se sastoji od rotacije kocke oko neke tacke
+    //rotacija oko tacke: translacija u tacku + rotacija + vracanje translacije u
+    //koordinatni pocetak
+    if(hit){
+    	glTranslatef(Xcenter_of_rotation , Ycenter_of_rotation + 0.1, Zcenter_of_rotation);
+        glRotatef(rotate_for , X_axes, 0, Z_axes);
+        glTranslatef(-Xcenter_of_rotation, -Ycenter_of_rotation -0.1, -Zcenter_of_rotation);
+        
+    }
+
+
    	 
     //iscrtavanje koceke
     glTranslatef(global_Xcenter , global_Ycenter, global_Zcenter);
@@ -56,9 +53,12 @@ void cube :: draw(){
 
     glTranslatef(Xcenter, Ycenter, Zcenter);
 	glColor3f(R, G, B);
+
+    //igrac staje u gard ako mu je receno da stane u gard ali tek kad savije ruke
     if(guard and rotate_end){
         glScalef(1,0.5,1);   
     }
+    
     glScalef(width, height, depth);
 
     //svaka kocka odbija razlicitu svetlost pa se ovde definisu koeficijenti odbijanja
@@ -93,15 +93,6 @@ void cube :: cube_set_translate(double increase_X,double increase_Y,double incre
 	this->increase_Y = increase_Y;
 	this->increase_Z = increase_Z;
 
-    //zbog vektora preusmeravanja trebaju nam koordinate prethodne tacke
-        // this->previous_Xcenter = this->Xcenter;
-        // this->previous_Ycenter = this->Ycenter;
-        // this->previous_Zcenter = this->Zcenter;
-}
-
-//ranije imala ulogu, sada su sva polja public ali neka ostane, mozda zatreba :)
-void cube :: cube_set_lh_hit(bool b){
-	this->hit = b;
 }
 
 //postavljanje centra rotacije
@@ -125,9 +116,6 @@ void cube :: cube_set_center(double Xcenter,double Ycenter,double Zcenter){
 	this->Xcenter = Xcenter;
 	this->Ycenter = Ycenter;
 	this->Zcenter = Zcenter;
-    this->previous_Xcenter = Xcenter;
-    this->previous_Ycenter = Ycenter;
-    this->previous_Zcenter = Zcenter;
 }
 
 //postavljanje dimenzija kocke
@@ -135,16 +123,6 @@ void cube :: cube_set_value(double width,double height,double depth){
 	this->width = width;
 	this->height = height;
 	this->depth = depth;
-}
-
-//obrisati ne koristim je
-void cube :: rotate_me(double angle){
-
-    glTranslatef(Xcenter , Ycenter, Zcenter);
-    glRotatef(angle , 0, 1, 0);
-    glTranslatef(-Xcenter, -Ycenter, -Zcenter);
-
-
 }
 
 //destruktor

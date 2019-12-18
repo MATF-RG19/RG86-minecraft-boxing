@@ -21,6 +21,8 @@ public:
 	
 	void guard_me(bool protect);
 
+	void set_axes(double x, double z);
+
 	//destruktori
 	~player();
 

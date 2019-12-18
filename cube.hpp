@@ -54,4 +54,5 @@ public:
 	double height;
 	double depth;
 	double angle;
+	double X_axes = 1, Z_axes = 0;
 };

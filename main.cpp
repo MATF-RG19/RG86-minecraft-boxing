@@ -48,7 +48,7 @@ static int guard2;
 
 //podesavanja tajmera
 #define TIMER_ID 0
-#define TIMER_INTERVAL 20
+#define TIMER_INTERVAL 15
 
 //callback funkcije
 static void on_reshape(int width, int height);
@@ -173,7 +173,7 @@ static void initialize(void)
 
 
 
-    std::string s2 = "tekstura2.bmp";
+    std::string s2 = "tekstura5.bmp";
     image_read(image, s2.c_str());
  
     //podesavanja teksture
@@ -210,9 +210,7 @@ static void on_reshape(int width, int height)
 
 static void on_display(void)
 {
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     
     glViewport(0, 0, window_width, window_height);
 
@@ -234,6 +232,7 @@ static void on_display(void)
             0, 0.2, 0,
             0, 1, 0
         );
+
 
     //reflektori ne treba da budu osvetljeni
     glDisable(GL_LIGHT0);
@@ -277,20 +276,22 @@ static void on_display(void)
 
 
     // glPushMatrix();
-    // gluOrtho(5,10, 1, 2);
+    // //gluOrtho2D(5,10);
+    // glRotatef(45, 0,1,0);
     // glBindTexture(GL_TEXTURE_2D, names[1]);
     //     glBegin(GL_POLYGON);
+    //         glNormal3f(0,0,1);
     //         glTexCoord2f(0,0);
-    //         glVertex2f(2,1);
+    //         glVertex3f(-4,1,5);
 
     //         glTexCoord2f(1,0);
-    //         glVertex2f(7,1);
+    //         glVertex3f(-3,1,5);
 
     //         glTexCoord2f(1,1);
-    //         glVertex2f(7,2);
+    //         glVertex3f(-3,2,5);
 
     //         glTexCoord2f(0,1);
-    //         glVertex2f(2,2);
+    //         glVertex3f(-4,2,5);
     //     glEnd();
     // glBindTexture(GL_TEXTURE_2D, 0);
     // glPopMatrix();
@@ -600,14 +601,15 @@ static void on_timer_movement(int value)
         return;
 
 
-    //VELIKA ZAHVALNOST KOLEGI FILIPU BOZOVICU NA POMOCI OKO RAZRESENJA
-    //BAGA KOJI JE UZROKOVAO LOSE ROTIRANJE IGRACA 
+    //racunanje ugla za koji treba rotirati igraca na osnovu skalarnog proizvoda
+    //racuna se u odnosu na pocetni vektor 0,0,1
     double x = p2.body.Xcenter-p1.body.Xcenter;
     double z = p2.body.Zcenter - p1.body.Zcenter;
 
     angle = acos(z/(sqrt(x*x + z*z)));
 
-//    printf("%lf\n", angle);
+
+    //odredjivanje orijentacije i prebacivanje iz radijana u stepene
     if(x > 0)
         angle =  180.0 * angle/M_PI;
     else
@@ -615,7 +617,6 @@ static void on_timer_movement(int value)
 
 
 
-        
     //posto se svi delovi tela pomeraju zajedno, uzimam bilo koji deo za proveru
     //ovde sam uzeo desnu ruku i proveravam koliko je jos rotacije preostalo da se
     //izvrsi tako sto rotacija ide od 5 pa se smanjuje do 0 cime se postize efekat
@@ -845,10 +846,13 @@ static void on_timer_guard2(int value)
     if (value != TIMER_ID)
         return;
 
+
     //izgleda kao pokret ruke uz dodatak provere da li ruku treba saviti u gard
     if(p2.left_hand.rotate_for >= -100 && !p2.left_hand.rotate_end && 
             p2.left_hand.guard){
         p2.left_hand.rotate_for -= 10;
+        
+        p2.redirect(angle, p2.body.Xcenter, p2.body.Ycenter, p2.body.Zcenter);
         //ako je rotacija dosla do kraja treba stati
         if(p2.left_hand.rotate_for == -100)
             p2.left_hand.rotate_end = true;
@@ -901,10 +905,13 @@ static void on_timer_guard(int value)
     if (value != TIMER_ID)
         return;
 
+
     //izgleda kao pokret ruke uz dodatak provere da li ruku treba saviti u gard
     if(p1.left_hand.rotate_for >= -100 && !p1.left_hand.rotate_end && 
             p1.left_hand.guard){
         p1.left_hand.rotate_for -= 10;
+        
+        p1.redirect(angle, p1.body.Xcenter, p1.body.Ycenter, p1.body.Zcenter);
         //ako je rotacija dosla do kraja treba stati
         if(p1.left_hand.rotate_for == -100)
             p1.left_hand.rotate_end = true;
@@ -967,6 +974,11 @@ static void on_keyboard(unsigned char key, int x, int y)
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             left_hand_punch = 1;
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p1.set_axes(p2.body.Zcenter - p1.left_hand.Zcenter,
+                       -p2.body.Xcenter + p1.left_hand.Xcenter);
+
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand, TIMER_ID);
         }
         break;
@@ -981,14 +993,22 @@ static void on_keyboard(unsigned char key, int x, int y)
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             right_hand_punch = 1;
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p1.set_axes(p2.body.Zcenter - p1.right_hand.Zcenter,
+                       -p2.body.Xcenter + p1.right_hand.Xcenter);
+            
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand, TIMER_ID);
         }
         break;
 
 
     case 'w':
-    case 'W':
+    case 'W':{
 
+
+        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
         // Pokrece se animacija ako je globalna promenljiva move_up = 0
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
@@ -999,6 +1019,11 @@ static void on_keyboard(unsigned char key, int x, int y)
 
             p1.right_foot.hit = true;
             right_foot_move = 1;
+
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
 
             //za odgovarajuci pokret na gore aktivira se funkcija move_up()
             p1.move_up();
@@ -1015,10 +1040,17 @@ static void on_keyboard(unsigned char key, int x, int y)
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs, TIMER_ID);
         }
+    }
         break;    
         
     case 's':
-    case 'S':
+    case 'S':{
+
+        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+        
+        // double new_distance = sqrt((p1.body.Xcenter+0.023-p2.body.Xcenter) * (p1.body.Xcenter+0.023-p2.body.Xcenter)
+        //     +(p1.body.Zcenter+0.023-p2.body.Zcenter) * (p1.body.Zcenter+0.023-p2.body.Zcenter)); 
 
         //ukoliko je vrednost move_down globalne promenljive 0 pokrece se animacija
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
@@ -1030,6 +1062,11 @@ static void on_keyboard(unsigned char key, int x, int y)
 
             p1.right_foot.hit = true;
             right_foot_move = 1;
+
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
 
             //poziva se metoda move_down koja nam podesava da se translacija vrsi
             //za neke hardkodirane vrednosti
@@ -1047,11 +1084,15 @@ static void on_keyboard(unsigned char key, int x, int y)
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs, TIMER_ID);
         }
+    }
         break;
 
     case 'd':
-    case 'D':
+    case 'D':{
 
+
+        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
         //vazi sve isto kao za komande W i S samo sto se vrsi translacija za
         //odgovarajuce vrednosti
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
@@ -1062,6 +1103,12 @@ static void on_keyboard(unsigned char key, int x, int y)
 
             p1.right_foot.hit = true;
             right_foot_move = 1;
+
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
+
 
             p1.move_right();
             move_right = 1;
@@ -1074,10 +1121,14 @@ static void on_keyboard(unsigned char key, int x, int y)
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs, TIMER_ID);
         }
+    }
         break;  
 
     case 'a':
-    case 'A':
+    case 'A':{
+
+        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
         //vazi isto kao i za W i S samo za odgovarajuce vrednosti
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena 
@@ -1087,6 +1138,12 @@ static void on_keyboard(unsigned char key, int x, int y)
 
             p1.right_foot.hit = true;
             right_foot_move = 1;
+
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
+
 
             p1.move_left();
             move_left = 1;
@@ -1099,6 +1156,7 @@ static void on_keyboard(unsigned char key, int x, int y)
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs, TIMER_ID);
         }
+    }
         break;
 
 
@@ -1112,6 +1170,9 @@ static void on_keyboard(unsigned char key, int x, int y)
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             left_hand_punch2 = 1;
+            p2.set_axes(p1.body.Zcenter - p2.left_hand.Zcenter,
+                       -p1.body.Xcenter + p2.left_hand.Xcenter);
+
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand2, TIMER_ID);
         }
         break;
@@ -1126,6 +1187,8 @@ static void on_keyboard(unsigned char key, int x, int y)
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             right_hand_punch2 = 1;
+            p2.set_axes(p1.body.Zcenter - p2.right_hand.Zcenter,
+                       -p1.body.Xcenter + p2.right_hand.Xcenter);
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand2, TIMER_ID);
         }
         break;
@@ -1194,6 +1257,11 @@ static void glutSpecialInput(int key, int x, int y){
             p2.right_foot.hit = true;
             right_foot_move2 = 1;
 
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
+
             //za odgovarajuci pokret na gore aktivira se funkcija move_up()
             p2.move_up();
             //globalno promenljivoj kazemo da se podesi na 1 kako bi funkcija
@@ -1224,6 +1292,11 @@ static void glutSpecialInput(int key, int x, int y){
 
             p2.right_foot.hit = true;
             right_foot_move2 = 1;
+
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
 
             //poziva se metoda move_down koja nam podesava da se translacija vrsi
             //za neke hardkodirane vrednosti
@@ -1257,6 +1330,11 @@ static void glutSpecialInput(int key, int x, int y){
             p2.right_foot.hit = true;
             right_foot_move2 = 1;
 
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
+
             p2.move_right();
             
             move_right2 = 1;
@@ -1282,6 +1360,12 @@ static void glutSpecialInput(int key, int x, int y){
 
             p2.right_foot.hit = true;
             right_foot_move2 = 1;
+
+
+            //postavljanje vektora oko kojeg se vrsi rotacija
+            //on je vektor normalan na pravac koji zaklapaju igraci
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
 
             p2.move_left();
             
