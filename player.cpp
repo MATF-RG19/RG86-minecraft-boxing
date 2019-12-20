@@ -2,16 +2,8 @@
 #include<iostream>
 #include<math.h>
 
-/*!!!!!! POKUSATI !!!!!!!
 
-    -Pokusati da se centri rotacije postave u odnosu na telo
-    -Ukloniti funkcije za centre. Raditi preko direktnog postavljanja vrednosti
-     polja
-*/
-
-
-
-player :: player(){
+player :: player() :health(0){
 
     //glava
     head.cube_set_value(0.2, 0.2, 0.2);
@@ -45,7 +37,6 @@ player :: player(){
     right_hand.cube_set_center(0.39, 1.4, 0.7);
     right_hand.cube_set_rotate(0.39, 1.52 , 0.7);
 
-    player_center = 1.7;
 
 }
 
@@ -94,10 +85,6 @@ void player :: translate_player(){
         right_hand.cube_set_center(0.39, 1.4, 1.7);
         right_hand.cube_set_rotate(0.39, 1.52 , 1.7);
 
-
-
-        player_center = 1.7;
-    
 
 }
 
@@ -199,6 +186,16 @@ void player :: move_right(){
     left_hand.cube_set_translate(0.023, 0, -0.023);
     right_hand.cube_set_translate(0.023, 0, -0.023);
 }
+
+void player :: punch_move(double x, double z){
+    head.cube_set_translate(x, 0, z);
+    body.cube_set_translate(x, 0, z);
+    left_foot.cube_set_translate(x, 0, z);
+    right_foot.cube_set_translate(x, 0, z);
+    left_hand.cube_set_translate(x, 0, z);
+    right_hand.cube_set_translate(x, 0, z);
+}
+
 
 
 player :: ~player(){};

@@ -15,6 +15,7 @@ public:
 	void move_down();
 	void move_left();
 	void move_right();
+	void punch_move(double x, double y);
 
 	void translate_player();
 	void redirect(double angle, double global_Xcenter, double global_Ycenter, double global_Zcenter);
@@ -38,6 +39,7 @@ public:
 	cube right_foot;
 	cube left_hand;
 	cube right_hand;
-	
-	double player_center;
+
+	double health;
+
 };

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 #include "player.hpp"
 #include "image.h"
 
@@ -11,14 +12,13 @@ static int window_width, window_height;
 
 #define FILENAME0 "textura.bmp"
 // Identifikatori tekstura.
-static GLuint names[2];
+static GLuint names[5];
 
-//centar ringa
+//centar ringa, za sada ne treba
 double ring_centerX = 1.25;
 double ring_centerZ = 1.25;
 
 double angle;
-bool first = true;
 
 //prvi igrac
 player p1;
@@ -142,7 +142,7 @@ static void initialize(void)
     //trazimo da nam se obezbedi 1 id i smesti u niz names kako bismo koristili teksturu
     //niz se nalazi na ovom mestu jer sam planirao da ubacim 2 teksture, od toga sam
     //za sada odustao pa i nije neophodan niz, mogla je promenljiva
-    glGenTextures(2, names);
+    glGenTextures(5, names);
 
     //ovde je bio problem konverzije string tipa u char*
     //verovatno zbog toga sto je biblioteka image pisana u c-u
@@ -179,6 +179,48 @@ static void initialize(void)
     //podesavanja teksture
     //pocinjemo rad nad teksturom
     glBindTexture(GL_TEXTURE_2D, names[1]);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image->width, image->height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+
+    //zavrsavamo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    std::string s4 = "tekstura3.bmp";
+    image_read(image, s4.c_str());
+ 
+    //podesavanja teksture
+    //pocinjemo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, names[2]);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image->width, image->height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+
+    //zavrsavamo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    std::string s3 = "tekstura2.bmp";
+    image_read(image, s3.c_str());
+ 
+    //podesavanja teksture
+    //pocinjemo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, names[3]);
     glTexParameteri(GL_TEXTURE_2D,
                     GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D,
@@ -234,7 +276,8 @@ static void on_display(void)
         );
 
 
-    //reflektori ne treba da budu osvetljeni
+    //reflektori ne treba da budu osvetljeni(a i osvetljenje se ne primenjuje
+    // na teksture :( )
     glDisable(GL_LIGHT0);
 
     //tribine
@@ -244,7 +287,7 @@ static void on_display(void)
             glNormal3f(0,1,0);
 
             glTexCoord2f(0.1, 0);
-            glVertex3f(-5, 0, 6.7);
+            glVertex3f(-5, 0, 6.4);
  
             glTexCoord2f(1,0);
             glVertex3f(-5, 0, -5);
@@ -253,7 +296,7 @@ static void on_display(void)
             glVertex3f(-6, 6, -5);
 
             glTexCoord2f(0.1,0.95);
-            glVertex3f(-6, 6, 6.7);
+            glVertex3f(-6, 6, 6.4);
         glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -274,28 +317,185 @@ static void on_display(void)
         glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    //kako bih uredio smanjivanje snage pomocu kliping ravni sakrivam deo
+    //"potrosene" snage
+    
+    glPushMatrix();
+    double clipping_plane[] = {-1, -1, 0, 300-(19.0/18.0 *p2.health)};
+    glClipPlane(GL_CLIP_PLANE0, clipping_plane);
+    glPopMatrix();
+    
 
-    // glPushMatrix();
-    // //gluOrtho2D(5,10);
-    // glRotatef(45, 0,1,0);
-    // glBindTexture(GL_TEXTURE_2D, names[1]);
-    //     glBegin(GL_POLYGON);
-    //         glNormal3f(0,0,1);
-    //         glTexCoord2f(0,0);
-    //         glVertex3f(-4,1,5);
+    glPushMatrix();
+    double clipping_plane2[] = {1, 0, 0, -(double)window_width+690.0-p1.health};
+    glClipPlane(GL_CLIP_PLANE1, clipping_plane2);	
+    glPopMatrix();
 
-    //         glTexCoord2f(1,0);
-    //         glVertex3f(-3,1,5);
 
-    //         glTexCoord2f(1,1);
-    //         glVertex3f(-3,2,5);
+    //postavljanje power-barova
+    glDisable(GL_LIGHTING);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    	//ucitavamo matricu identiteta jer gledamo kao da je nezavisan deo igrice
+    	glLoadIdentity();
+    	glMatrixMode(GL_PROJECTION);
+    	glPushMatrix();
+    		glLoadIdentity();
+    		//prebacujemo se na 2D crtanje preko celog ekrana
+    		glEnable(GL_CLIP_PLANE0);
+    		gluOrtho2D(0,window_width,0,window_height);
+    		//glavna linija snage
+		    glBindTexture(GL_TEXTURE_2D, names[3]);
+		        glBegin(GL_POLYGON);
+		            glNormal3f(0,0,1);
+		            glTexCoord2f(0.1,0.4);
+		            glVertex2f(100,60);
 
-    //         glTexCoord2f(0,1);
-    //         glVertex3f(-4,2,5);
-    //     glEnd();
-    // glBindTexture(GL_TEXTURE_2D, 0);
-    // glPopMatrix();
+		            glTexCoord2f(1,0.4);
+		            glVertex2f(400,60);
 
+		            glTexCoord2f(1,0.8);
+		            glVertex2f(400,85);
+
+		            glTexCoord2f(0.1,0.8);
+		            glVertex2f(100,85);
+		        glEnd();
+		    glBindTexture(GL_TEXTURE_2D, 0);
+
+		    //sporedna linija snage
+		    glBindTexture(GL_TEXTURE_2D, names[1]);
+		        glBegin(GL_POLYGON);
+		            glNormal3f(0,0,1);
+		            glTexCoord2f(0.1,0.4);
+		            glVertex2f(100,50);
+
+		            glTexCoord2f(1,0.4);
+		            glVertex2f(400,50);
+
+		            glTexCoord2f(1,0.8);
+		            glVertex2f(400,60);
+
+		            glTexCoord2f(0.1,0.8);
+		            glVertex2f(100,60);
+		        glEnd();
+		    glBindTexture(GL_TEXTURE_2D, 0);
+
+		    glDisable(GL_CLIP_PLANE0);
+		    //oblik sa strane
+		    glBindTexture(GL_TEXTURE_2D, names[3]);
+		        glBegin(GL_POLYGON);
+		            glNormal3f(0,0,1);
+
+		            glTexCoord2f(0.4,0);
+		            glVertex2f(35,30);
+
+		            glTexCoord2f(0.6,0);
+		            glVertex2f(70,30);
+
+		            glTexCoord2f(0.8,0.4);
+		            glVertex2f(100,50);
+		            
+		            glTexCoord2f(0.8,0.6);
+		            glVertex2f(100,85);
+
+		            glTexCoord2f(0.6,0.8);
+		            glVertex2f(70,105);
+
+		            glTexCoord2f(0.4,0.8);
+		            glVertex2f(35,105);
+
+		        glEnd();
+		    glBindTexture(GL_TEXTURE_2D, 0);
+			glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    //desni power-bar
+    glDisable(GL_LIGHTING);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    	//ucitavamo matricu identiteta jer gledamo kao da je nezavisan deo igrice
+    	glLoadIdentity();
+    	glMatrixMode(GL_PROJECTION);
+    	glPushMatrix();
+    		glLoadIdentity();
+    		//prebacujemo se na 2D crtanje preko celog ekrana
+    		glEnable(GL_CLIP_PLANE1);
+    		gluOrtho2D(0,window_width,0,window_height);
+    		//glavna linija snage
+		    glBindTexture(GL_TEXTURE_2D, names[2]);
+		        glBegin(GL_POLYGON);
+		            glNormal3f(0,0,1);
+		            glTexCoord2f(0.1,0.4);
+		            glVertex2f(window_width-100,60);
+
+		            glTexCoord2f(1,0.4);
+		            glVertex2f(window_width-400,60);
+
+		            glTexCoord2f(1,0.8);
+		            glVertex2f(window_width-400,85);
+
+		            glTexCoord2f(0.1,0.8);
+		            glVertex2f(window_width-100,85);
+		        glEnd();
+		    glBindTexture(GL_TEXTURE_2D, 0);
+
+		    //sporedna linija snage
+		    glBindTexture(GL_TEXTURE_2D, names[1]);
+		        glBegin(GL_POLYGON);
+		            glNormal3f(0,0,1);
+		            glTexCoord2f(0.1,0.4);
+		            glVertex2f(window_width-100,50);
+
+		            glTexCoord2f(1,0.4);
+		            glVertex2f(window_width-400,50);
+
+		            glTexCoord2f(1,0.8);
+		            glVertex2f(window_width-400,60);
+
+		            glTexCoord2f(0.1,0.8);
+		            glVertex2f(window_width-100,60);
+		        glEnd();
+		    glBindTexture(GL_TEXTURE_2D, 0);
+		    glDisable(GL_CLIP_PLANE1);
+
+		    //oblik sa strane
+		    glBindTexture(GL_TEXTURE_2D, names[2]);
+		        glBegin(GL_POLYGON);
+		            glNormal3f(0,0,1);
+
+		            glTexCoord2f(0.4,0);
+		            glVertex2f(window_width-35,30);
+
+		            glTexCoord2f(0.6,0);
+		            glVertex2f(window_width-70,30);
+
+		            glTexCoord2f(0.8,0.4);
+		            glVertex2f(window_width-100,50);
+		            
+		            glTexCoord2f(0.8,0.6);
+		            glVertex2f(window_width-100,85);
+
+		            glTexCoord2f(0.6,0.8);
+		            glVertex2f(window_width-70,105);
+
+		            glTexCoord2f(0.4,0.8);
+		            glVertex2f(window_width-35,105);
+
+		        glEnd();
+		    glBindTexture(GL_TEXTURE_2D, 0);
+			glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     
     //plava svetlost se najvise odbija od rina
@@ -447,8 +647,6 @@ static void on_display(void)
     p1.draw_player();
     p2.draw_player();
 
-
-
     glutSwapBuffers();
 }
 
@@ -460,6 +658,10 @@ static void on_timer_hand(int value)
     if (value != TIMER_ID)
         return;
 
+    double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+    srand(time(NULL));
 
     //udarac leve ruke
     //ruci kazemo da se rotira za odredjeni deo. Kako je pritiskom na dugme
@@ -468,6 +670,47 @@ static void on_timer_hand(int value)
     //da bi ruka stala sa rotacijom u nekom trenutku imamo rotate_end promenljivu
     if(p1.left_hand.rotate_for >= -120 && !p1.left_hand.rotate_end){
         p1.left_hand.rotate_for -= 10;
+        
+        //detekcija udarca
+
+        /**************************************************************
+        naravno ako protivnik drzi gard mozemo da ga udaramo ali mu ne 
+        nanosimo stetu. Takodje podrazumeva se da neki udarac moze da 
+        "zaluta kroz gard i to se desava retko i nezavisno od toga koji
+        je to pokusaj po redu bio(dakle rand())"
+        ***************************************************************/
+
+        if(rand()%10 == 1 or rand() == 5){
+	        	if(real_distance <0.4 and p2.left_hand.guard 
+	        		and p1.left_hand.rotate_for == -20){
+	        	p1.left_hand.rotate_end =true;
+	        	p2.health +=5;
+	    	}
+        }
+
+        //udarci su razvrstani po snazi u zavisnosti koliko smo blizu prisli
+        //protivniku
+        //najjaci udarac je kad smo bas blizu protivniku
+        if(real_distance <0.4 and real_distance and !p2.left_hand.guard and 
+        	p1.left_hand.rotate_for == -20){
+        	p1.left_hand.rotate_end =true;
+        	p2.health +=15;
+        	//odbijanje igraca            
+    	}
+
+    	//srednji udarac je kad smo na nekom optimalnom rastojanju
+        if(real_distance <0.55 and real_distance > 0.4 and !p2.left_hand.guard and 
+        	p1.left_hand.rotate_for == -60){
+        	p1.left_hand.rotate_end =true;
+        	p2.health +=10;
+    	}
+
+    	//ako protivnika jedva mozemo da "okrznemo" smanjujemo mu malo snage
+        if(real_distance <0.75 and real_distance > 0.55 and !p2.left_hand.guard and 
+        	p1.left_hand.rotate_for == -90)
+        	p2.health +=5;
+        
+
         //ako je rotacija dosla do kraja treba stati
         if(p1.left_hand.rotate_for == -120)
             p1.left_hand.rotate_end = true;
@@ -485,6 +728,35 @@ static void on_timer_hand(int value)
     //isto kao za left_hand :)
     if(p1.right_hand.rotate_for >= -120 && !p1.right_hand.rotate_end){
         p1.right_hand.rotate_for -= 10;
+
+
+        //slucajan udarac kroz blok
+        if(rand()%10 == 1 or rand() == 5){
+	        	if(real_distance <0.4 and p2.left_hand.guard
+	        	 and p1.right_hand.rotate_for == -20){
+	        	p1.right_hand.rotate_end =true;
+	        	p2.health +=5;
+	    	}	
+        }
+
+
+        //detekcija udarca
+        if(real_distance <0.4 and real_distance and !p2.left_hand.guard and 
+        	p1.right_hand.rotate_for == -20){
+        	p1.right_hand.rotate_end =true;
+        	p2.health +=15;
+    	}
+
+        if(real_distance <0.55 and real_distance > 0.4 and !p2.left_hand.guard and 
+        	p1.right_hand.rotate_for == -60){
+        	p1.right_hand.rotate_end =true;
+        	p2.health +=10;
+    	}
+        if(real_distance <0.75 and real_distance > 0.55 and !p2.left_hand.guard and 
+        	p1.right_hand.rotate_for == -90)
+        	p2.health +=5;
+        
+
         if(p1.right_hand.rotate_for == -120)
             p1.right_hand.rotate_end = true;
     }
@@ -515,6 +787,11 @@ static void on_timer_hand2(int value)
     if (value != TIMER_ID)
         return;
 
+    double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+
+    srand(time(NULL));
 
     //udarac leve ruke
     //ruci kazemo da se rotira za odredjeni deo. Kako je pritiskom na dugme
@@ -523,6 +800,33 @@ static void on_timer_hand2(int value)
     //da bi ruka stala sa rotacijom u nekom trenutku imamo rotate_end promenljivu
     if(p2.left_hand.rotate_for >= -120 && !p2.left_hand.rotate_end){
         p2.left_hand.rotate_for -= 10;
+
+        //slucajan udarac kroz blok
+        if(rand()%10 == 1 or rand() == 5){
+	        	if(real_distance <0.4 and p1.left_hand.guard
+	        	and p2.left_hand.rotate_for == -20){
+	        	p2.left_hand.rotate_end =true;
+	        	p1.health +=5;
+	    	}	
+        }
+
+        //detekcija udarca
+        if(real_distance <0.4 and real_distance and !p1.left_hand.guard and 
+        	p2.left_hand.rotate_for == -20){
+        	p2.left_hand.rotate_end =true;
+        	p1.health +=15;
+    	}
+
+        if(real_distance <0.55 and real_distance > 0.4 and !p1.left_hand.guard and 
+        	p2.left_hand.rotate_for == -60){
+        	p2.left_hand.rotate_end =true;
+        	p1.health +=10;
+    	}
+        if(real_distance <0.75 and real_distance > 0.55 and !p1.left_hand.guard and 
+        	p2.left_hand.rotate_for == -90)
+        	p1.health +=5;
+        
+
         //ako je rotacija dosla do kraja treba stati
         if(p2.left_hand.rotate_for == -120)
             p2.left_hand.rotate_end = true;
@@ -540,6 +844,33 @@ static void on_timer_hand2(int value)
     //isto kao za left_hand :)
     if(p2.right_hand.rotate_for >= -120 && !p2.right_hand.rotate_end){
         p2.right_hand.rotate_for -= 10;
+
+        //slucajan udarac kroz blok
+        if(rand()%10 == 1 or rand() == 5){
+	        	if(real_distance <0.4 and !p1.left_hand.guard and 
+	        	p2.right_hand.rotate_for == -20){
+	        	p2.right_hand.rotate_end =true;
+	        	p1.health +=5;
+	    	}	
+        }
+
+        //detekcija udarca
+        if(real_distance <0.4 and real_distance and !p1.left_hand.guard and 
+        	p2.right_hand.rotate_for == -20){
+        	p2.right_hand.rotate_end =true;
+        	p1.health +=15;
+    	}
+
+        if(real_distance <0.55 and real_distance > 0.4 and !p1.left_hand.guard and 
+        	p2.right_hand.rotate_for == -60){
+        	p2.right_hand.rotate_end =true;
+        	p1.health +=10;
+    	}
+        if(real_distance <0.75 and real_distance > 0.55 and !p1.left_hand.guard and 
+        	p2.right_hand.rotate_for == -90)
+        	p1.health +=5;
+
+        //ako je ruka dosla do kraja rotacije i treba da se vrati
         if(p2.right_hand.rotate_for == -120)
             p2.right_hand.rotate_end = true;
     }
@@ -560,39 +891,6 @@ static void on_timer_hand2(int value)
     }
 }
 
-
-/*
-static void on_timer_right_hand(int value)
-{
-    
-    if (value != TIMER_ID)
-        return;
-
-
-    //udarac desne ruke
-    if(p1.right_hand.rotate_for >= -120 && !p1.right_hand.rotate_end){
-        p1.right_hand.rotate_for -= 10;
-        if(p1.right_hand.rotate_for == -120)
-            p1.right_hand.rotate_end = true;
-    }
-    else if(p1.right_hand.rotate_for <0){
-        p1.right_hand.rotate_for += 10;
-    }
-    else{
-        p1.right_hand.hit = false;
-        p1.right_hand.rotate_for = 0;
-        right_hand_punch = 0;
-        p1.right_hand.rotate_end= false; 
-    }
-
-
-    glutPostRedisplay();
-
-    if (right_hand_punch) {
-        glutTimerFunc(TIMER_INTERVAL, on_timer_right_hand, TIMER_ID);
-    }
-}
-*/
 
 static void on_timer_movement(int value)
 {
@@ -966,7 +1264,7 @@ static void on_keyboard(unsigned char key, int x, int y)
     case 'g':
     case 'G':
         /* Pokrece se animacija. */
-        if (!left_hand_punch) {
+        if (!left_hand_punch and !p1.right_hand.guard) {
             //kazemo da se vrednost za udarac leve ruke stavi na true
             //u svakom iscrtavanju se proverava da li je ta vrednost true
             //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
@@ -975,9 +1273,14 @@ static void on_keyboard(unsigned char key, int x, int y)
             //treba da pocne sa animacijom
             left_hand_punch = 1;
             //postavljanje vektora oko kojeg se vrsi rotacija
-            //on je vektor normalan na pravac koji zaklapaju igraci
-            p1.set_axes(p2.body.Zcenter - p1.left_hand.Zcenter,
-                       -p2.body.Xcenter + p1.left_hand.Xcenter);
+            //on je vektor normalan na pravac koji zaklapaju ruka jednog igraca
+            // i centar tela drugog igraca
+            if(p1.body.Zcenter < p2.body.Zcenter)
+            	p1.set_axes(p2.body.Zcenter - p1.left_hand.Zcenter,
+                     	  -p2.body.Xcenter + p1.left_hand.Xcenter);
+            else
+            	p1.set_axes(-p1.body.Zcenter + p2.left_hand.Zcenter,
+                     	  +p1.body.Xcenter - p2.left_hand.Xcenter);
 
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand, TIMER_ID);
         }
@@ -988,16 +1291,24 @@ static void on_keyboard(unsigned char key, int x, int y)
         //kazemo da se vrednost za udarac desne ruke stavi na true
         //u svakom iscrtavanju se proverava da li je ta vrednost true
         //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
-        if (!right_hand_punch) {
+        if (!right_hand_punch and !p1.right_hand.guard) {
             p1.right_hand.hit = true;
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             right_hand_punch = 1;
             //postavljanje vektora oko kojeg se vrsi rotacija
-            //on je vektor normalan na pravac koji zaklapaju igraci
-            p1.set_axes(p2.body.Zcenter - p1.right_hand.Zcenter,
-                       -p2.body.Xcenter + p1.right_hand.Xcenter);
-            
+            //on je vektor normalan na pravac koji zaklapaju ruka jednog igraca
+            //i telo protivnika
+            //u zavisnosti od pozicije igraca treba namestiti vektor(nisam siguran
+            //zasto ovo bas radi ovako tj zasto zavisi od pozicija igraca ali
+            //ovako radi :) )
+            if(p1.body.Zcenter < p2.body.Zcenter)
+            	p1.set_axes(p2.body.Zcenter - p1.right_hand.Zcenter,
+                       	-p2.body.Xcenter + p1.right_hand.Xcenter);
+            else
+            	p1.set_axes(-p1.body.Zcenter + p2.right_hand.Zcenter,
+                       	p1.body.Xcenter - p2.right_hand.Xcenter);
+
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand, TIMER_ID);
         }
         break;
@@ -1007,12 +1318,42 @@ static void on_keyboard(unsigned char key, int x, int y)
     case 'W':{
 
 
-        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
-        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+    	/********************************************
+          Ovaj deo koda vezan za udaljenost je dugo imao bag
+          NAZALOST otklonio sam bag uvodjenjem real_distnace promenljive
+          Da nisam otklonio bag napravio bih da je to ustvari klinc u kojem
+          mogu bokseri stvarno da se nadju. Obzirom da sam otklonio bag, i nemam
+          vremena da pravim "klinc", ipak ce ostati bez te opcije
+          "It's not a bug it's a feature"*
+          *******************************************/
+
+    	//racuna se koja bi bila udaljenost kad bi igrac prisao drugom
+    	//igraci se zapravo krecu za po 0.023 medjutim ako se prdrzi dugme 
+    	//moguce je da igrac "prokliza" tako da premasi mnogo vrednost od 0.023
+    	//zato proveravam za pomeraj od 0.1
+        double distance = sqrt((p1.body.Xcenter-0.1-p2.body.Xcenter) * (p1.body.Xcenter-0.1-p2.body.Xcenter)
+            +(p1.body.Zcenter-0.1-p2.body.Zcenter) * (p1.body.Zcenter-0.1-p2.body.Zcenter));
+
+        //stvarna udaljenost bez pomeraja
+        double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+        //pretpostavimo da je igrac preblizu pa ne moze da se krece
+		bool can_move = false;
+
+		//ako smo dovoljno daleko mozemo da se krecemo sigurno
+		if(distance > 0.4)
+			can_move = true;
+
+		//ako se klikom nasa udaljenost povecava, mozemo da se krecemo
+		if(distance > real_distance)
+			can_move = true;
+
         // Pokrece se animacija ako je globalna promenljiva move_up = 0
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_up and p1.body.Xcenter >= -2.0 and p1.body.Zcenter >= -2.30) {
+        if (!move_up and p1.body.Xcenter >= -2.0 and p1.body.Zcenter >= -2.30
+        	and !p1.right_hand.guard and can_move) {
             //zapravo nije udarac vec se simulira da se noga pomera pri kretanju
             p1.left_foot.hit = true;
             left_foot_move = 1;
@@ -1024,6 +1365,9 @@ static void on_keyboard(unsigned char key, int x, int y)
             //on je vektor normalan na pravac koji zaklapaju igraci
             p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
                        -p2.body.Xcenter + p1.body.Xcenter);
+
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
 
             //za odgovarajuci pokret na gore aktivira se funkcija move_up()
             p1.move_up();
@@ -1046,16 +1390,25 @@ static void on_keyboard(unsigned char key, int x, int y)
     case 's':
     case 'S':{
 
-        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
-        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+        double distance = sqrt((p1.body.Xcenter+0.1-p2.body.Xcenter) * (p1.body.Xcenter+0.1-p2.body.Xcenter)
+            +(p1.body.Zcenter+0.1-p2.body.Zcenter) * (p1.body.Zcenter+0.1-p2.body.Zcenter));
         
-        // double new_distance = sqrt((p1.body.Xcenter+0.023-p2.body.Xcenter) * (p1.body.Xcenter+0.023-p2.body.Xcenter)
-        //     +(p1.body.Zcenter+0.023-p2.body.Zcenter) * (p1.body.Zcenter+0.023-p2.body.Zcenter)); 
+       double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+		bool can_move = false;
+
+		if(distance > 0.4)
+			can_move = true;
+
+		if(distance > real_distance)
+			can_move = true;
 
         //ukoliko je vrednost move_down globalne promenljive 0 pokrece se animacija
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_down and p1.body.Xcenter <= 3.50 and p1.body.Zcenter <=3.7) {
+        if (!move_down and p1.body.Xcenter <= 3.50 and p1.body.Zcenter <=3.7
+        	and !p1.right_hand.guard and can_move) {
             //nije udarac samo je isti pokret kada se krece
             p1.left_foot.hit = true;
             left_foot_move = 1;
@@ -1067,6 +1420,9 @@ static void on_keyboard(unsigned char key, int x, int y)
             //on je vektor normalan na pravac koji zaklapaju igraci
             p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
                        -p2.body.Xcenter + p1.body.Xcenter);
+
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
 
             //poziva se metoda move_down koja nam podesava da se translacija vrsi
             //za neke hardkodirane vrednosti
@@ -1091,13 +1447,26 @@ static void on_keyboard(unsigned char key, int x, int y)
     case 'D':{
 
 
-        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
-        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+        double distance = sqrt((p1.body.Xcenter+0.1-p2.body.Xcenter) * (p1.body.Xcenter+0.1-p2.body.Xcenter)
+            +(p1.body.Zcenter-0.1-p2.body.Zcenter) * (p1.body.Zcenter-0.1-p2.body.Zcenter));
+       
+        double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+		bool can_move = false;
+
+		if(distance > 0.4)
+			can_move = true;
+
+		if(distance > real_distance)
+			can_move = true;
+
         //vazi sve isto kao za komande W i S samo sto se vrsi translacija za
         //odgovarajuce vrednosti
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_right and  p1.body.Xcenter <= 3.50 and p1.body.Zcenter >= -2.30) {
+        if (!move_right and  p1.body.Xcenter <= 3.50 and p1.body.Zcenter >= -2.30
+        	and !p1.right_hand.guard and can_move) {
             p1.left_foot.hit = true;
             left_foot_move = 1;
 
@@ -1108,6 +1477,9 @@ static void on_keyboard(unsigned char key, int x, int y)
             //on je vektor normalan na pravac koji zaklapaju igraci
             p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
                        -p2.body.Xcenter + p1.body.Xcenter);
+
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
 
 
             p1.move_right();
@@ -1127,12 +1499,26 @@ static void on_keyboard(unsigned char key, int x, int y)
     case 'a':
     case 'A':{
 
-        // double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
-        //     +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+        double distance = sqrt((p1.body.Xcenter-0.1-p2.body.Xcenter) * (p1.body.Xcenter-0.1-p2.body.Xcenter)
+            +(p1.body.Zcenter+0.1-p2.body.Zcenter) * (p1.body.Zcenter+0.1-p2.body.Zcenter));
+       
+        double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+		bool can_move = false;
+
+		if(distance > 0.4)
+			can_move = true;
+
+		if(distance > real_distance)
+			can_move = true;
+
         //vazi isto kao i za W i S samo za odgovarajuce vrednosti
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena 
-        if (!move_left and p1.body.Zcenter <= 3.7 and p1.body.Xcenter >= -2.0) {
+        if (!move_left and p1.body.Zcenter <= 3.7 and p1.body.Xcenter >= -2.0
+        	and !p1.right_hand.guard and can_move) {
             p1.left_foot.hit = true;
             left_foot_move = 1;
 
@@ -1143,6 +1529,9 @@ static void on_keyboard(unsigned char key, int x, int y)
             //on je vektor normalan na pravac koji zaklapaju igraci
             p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
                        -p2.body.Xcenter + p1.body.Xcenter);
+
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
 
 
             p1.move_left();
@@ -1162,7 +1551,7 @@ static void on_keyboard(unsigned char key, int x, int y)
 
     case '4':
         /* Pokrece se animacija. */
-        if (!left_hand_punch2) {
+        if (!left_hand_punch2 and !p2.right_hand.guard) {
             //kazemo da se vrednost za udarac leve ruke stavi na true
             //u svakom iscrtavanju se proverava da li je ta vrednost true
             //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
@@ -1170,8 +1559,14 @@ static void on_keyboard(unsigned char key, int x, int y)
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             left_hand_punch2 = 1;
-            p2.set_axes(p1.body.Zcenter - p2.left_hand.Zcenter,
-                       -p1.body.Xcenter + p2.left_hand.Xcenter);
+
+            //isto kao i za igraca 1 samo drugaciji pravci vektora
+            if(p1.body.Zcenter < p2.body.Zcenter)
+            	p2.set_axes(p1.body.Zcenter - p2.left_hand.Zcenter,
+                      	 -p1.body.Xcenter + p2.left_hand.Xcenter);
+            else
+            	p2.set_axes(-p2.body.Zcenter +p1.left_hand.Zcenter,
+                      	 p2.body.Xcenter -p1.left_hand.Xcenter);
 
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand2, TIMER_ID);
         }
@@ -1182,13 +1577,19 @@ static void on_keyboard(unsigned char key, int x, int y)
         //kazemo da se vrednost za udarac desne ruke stavi na true
         //u svakom iscrtavanju se proverava da li je ta vrednost true
         //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
-        if (!right_hand_punch2) {
+        if (!right_hand_punch2 and !p2.right_hand.guard) {
             p2.right_hand.hit = true;
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             right_hand_punch2 = 1;
-            p2.set_axes(p1.body.Zcenter - p2.right_hand.Zcenter,
-                       -p1.body.Xcenter + p2.right_hand.Xcenter);
+
+            if(p1.body.Zcenter < p2.body.Zcenter)
+        	    p2.set_axes(p1.body.Zcenter - p2.right_hand.Zcenter,
+            	           -p1.body.Xcenter + p2.right_hand.Xcenter);
+        	else
+        		p2.set_axes(-p2.body.Zcenter +p1.right_hand.Zcenter,
+            	           p2.body.Xcenter - p1.right_hand.Xcenter);
+
             glutTimerFunc(TIMER_INTERVAL, on_timer_hand2, TIMER_ID);
         }
         break;
@@ -1204,6 +1605,11 @@ static void on_keyboard(unsigned char key, int x, int y)
             //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
             p2.left_hand.hit = true;
             p2.right_hand.hit = true;
+
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             left_hand_punch2 = 1;
@@ -1227,6 +1633,11 @@ static void on_keyboard(unsigned char key, int x, int y)
             //ako jeste vrse se odgovarajuce rotacije kako bi se simulirao glatki pokret
             p1.left_hand.hit = true;
             p1.right_hand.hit = true;
+
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
+            p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
+                       -p1.body.Xcenter + p2.body.Xcenter);
             //vrednost globalne promenljive stavljamo na 1 kako bi tajmer znao da
             //treba da pocne sa animacijom
             left_hand_punch = 1;
@@ -1244,12 +1655,27 @@ static void glutSpecialInput(int key, int x, int y){
 
     switch (key) {
    
-    case GLUT_KEY_UP:
+    case GLUT_KEY_UP:{
+
+    	double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter+0.1) * (p1.body.Xcenter-p2.body.Xcenter+0.1)
+            +(p1.body.Zcenter-p2.body.Zcenter+0.1) * (p1.body.Zcenter-p2.body.Zcenter+0.1));
+ 
+    	double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+		bool can_move = false;
+
+		if(distance > 0.4)
+			can_move = true;
+
+		if(distance > real_distance)
+			can_move = true;
 
         // Pokrece se animacija ako je globalna promenljiva move_up = 0
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_up2 and p2.body.Xcenter >= -2.0 and p2.body.Zcenter >= -2.30) {
+        if (!move_up2 and p2.body.Xcenter >= -2.0 and p2.body.Zcenter >= -2.30
+        	and !p2.right_hand.guard and can_move) {
             //zapravo nije udarac vec se simulira da se noga pomera pri kretanju
             p2.left_foot.hit = true;
             left_foot_move2 = 1;
@@ -1262,6 +1688,8 @@ static void glutSpecialInput(int key, int x, int y){
             p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
                        -p1.body.Xcenter + p2.body.Xcenter);
 
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
             //za odgovarajuci pokret na gore aktivira se funkcija move_up()
             p2.move_up();
             //globalno promenljivoj kazemo da se podesi na 1 kako bi funkcija
@@ -1277,15 +1705,32 @@ static void glutSpecialInput(int key, int x, int y){
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement2, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs2, TIMER_ID);
         }
+    }
         break;    
         
     
-    case GLUT_KEY_DOWN:
+    case GLUT_KEY_DOWN:{
+
+
+    	double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter-0.1) * (p1.body.Xcenter-p2.body.Xcenter-0.1)
+            +(p1.body.Zcenter-p2.body.Zcenter-0.1) * (p1.body.Zcenter-p2.body.Zcenter-0.1));
+
+    	double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+		bool can_move = false;
+
+		if(distance > 0.4)
+			can_move = true;
+
+		if(distance > real_distance)
+			can_move = true;
 
         //ukoliko je vrednost move_down globalne promenljive 0 pokrece se animacija
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_down2 and p2.body.Xcenter <= 3.50 and p2.body.Zcenter <=3.7) {
+        if (!move_down2 and p2.body.Xcenter <= 3.50 and p2.body.Zcenter <=3.7
+        	and !p2.right_hand.guard and can_move) {
             //nije udarac samo je isti pokret kada se krece
             p2.left_foot.hit = true;
             left_foot_move2 = 1;
@@ -1298,6 +1743,8 @@ static void glutSpecialInput(int key, int x, int y){
             p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
                        -p1.body.Xcenter + p2.body.Xcenter);
 
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
             //poziva se metoda move_down koja nam podesava da se translacija vrsi
             //za neke hardkodirane vrednosti
             p2.move_down();
@@ -1314,16 +1761,33 @@ static void glutSpecialInput(int key, int x, int y){
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement2, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs2, TIMER_ID);
         }
+    }
         break;
 
     
-    case GLUT_KEY_RIGHT:
+    case GLUT_KEY_RIGHT:{
+
+
+    	double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter-0.1) * (p1.body.Xcenter-p2.body.Xcenter-0.1)
+            +(p1.body.Zcenter-p2.body.Zcenter+0.1) * (p1.body.Zcenter-p2.body.Zcenter+0.1));
+ 
+    	double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+		bool can_move = false;
+
+		if(distance > 0.4)
+			can_move = true;
+
+		if(distance > real_distance)
+			can_move = true;
 
         //vazi sve isto kao za komande W i S samo sto se vrsi translacija za
         //odgovarajuce vrednosti
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena
-        if (!move_right2 and  p2.body.Xcenter <= 3.50 and p2.body.Zcenter >= -2.30) {
+        if (!move_right2 and  p2.body.Xcenter <= 3.50 and p2.body.Zcenter >= -2.30
+        	and !p2.right_hand.guard and can_move) {
             p2.left_foot.hit = true;
             left_foot_move2 = 1;
 
@@ -1334,6 +1798,9 @@ static void glutSpecialInput(int key, int x, int y){
             //on je vektor normalan na pravac koji zaklapaju igraci
             p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
                        -p1.body.Xcenter + p2.body.Xcenter);
+
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
 
             p2.move_right();
             
@@ -1347,14 +1814,41 @@ static void glutSpecialInput(int key, int x, int y){
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement2, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs2, TIMER_ID);
         }
+    }
         break;  
 
     
-    case GLUT_KEY_LEFT:
+    case GLUT_KEY_LEFT:{
+
+    	//racuna se koja bi bila udaljenost kad bi igrac prisao drugom
+    	//igraci se zapravo krecu za po 0.023 medjutim ako se prdrzi dugme 
+    	//moguce je da igrac "prokliza" tako da premasi mnogo vrednost od 0.023
+    	//zato proveravam za pomeraj od 0.1
+    	double distance = sqrt((p1.body.Xcenter-p2.body.Xcenter+0.1) * (p1.body.Xcenter-p2.body.Xcenter+0.1)
+            +(p1.body.Zcenter-p2.body.Zcenter-0.1) * (p1.body.Zcenter-p2.body.Zcenter-0.1));
+ 
+ 		//kolika je zapravo udaljenost bez pomeranja na novu poziciju
+    	double real_distance =sqrt((p1.body.Xcenter-p2.body.Xcenter) * (p1.body.Xcenter-p2.body.Xcenter)
+            +(p1.body.Zcenter-p2.body.Zcenter) * (p1.body.Zcenter-p2.body.Zcenter));
+
+    	//pretpostavimo da igrac ne moze da se krece ka drugom jer je preblziu
+		bool can_move = false;
+
+		//ako je nova udaljenost veca od 0.5 svakako smo dovoljno daleko pa se
+		//mozemo kretati
+		if(distance > 0.4)
+			can_move = true;
+
+		//ako se nasim porketom udaljavamo od prethodne pozicije, mozemo da
+		//se krecemo
+		if(distance > real_distance)
+			can_move = true;
+
         //vazi isto kao i za W i S samo za odgovarajuce vrednosti
         //dodatno ako se igrac nalazi blizu ivice ringa, nije moguce kretati se dalje
         //kako igrac ne bi napustio granice terena 
-        if (!move_left2 and p2.body.Zcenter <= 3.7 and p2.body.Xcenter >= -2.0) {
+        if (!move_left2 and p2.body.Zcenter <= 3.7 and p2.body.Xcenter >= -2.0
+        	and !p2.right_hand.guard and can_move) {
             p2.left_foot.hit = true;
             left_foot_move2 = 1;
 
@@ -1366,6 +1860,9 @@ static void glutSpecialInput(int key, int x, int y){
             //on je vektor normalan na pravac koji zaklapaju igraci
             p2.set_axes(p1.body.Zcenter - p2.body.Zcenter,
                        -p1.body.Xcenter + p2.body.Xcenter);
+
+            p1.set_axes(p2.body.Zcenter - p1.body.Zcenter,
+                       -p2.body.Xcenter + p1.body.Xcenter);
 
             p2.move_left();
             
@@ -1379,6 +1876,7 @@ static void glutSpecialInput(int key, int x, int y){
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement2, TIMER_ID);
             glutTimerFunc(TIMER_INTERVAL, on_timer_movement_legs2, TIMER_ID);
         }
+    }
         break; 
 
     }

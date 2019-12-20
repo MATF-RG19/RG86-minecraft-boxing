@@ -75,13 +75,8 @@ void cube :: draw(){
     
     glutSolidCube(1);
 
-    //ranije se videla oivicenost kocke sa WireCube kockom
-    //dodavanjem osvetljenja manje je naglasena ta spoljasnja kocka koja daje okvir
-    //za sada ostaje, ne smeta, a mozda posluzi :)
     glLineWidth(0.5);
-    glColor3f(1, 1, 1);
-    glutWireCube(1);
-
+   
     glPopMatrix();
     
 
