@@ -17,6 +17,9 @@ public:
 	void move_right();
 	void punch_move(double x, double y);
 
+	//funkcije za zavrsetak igrice
+	void sky_launch();
+
 	void translate_player();
 	void redirect(double angle, double global_Xcenter, double global_Ycenter, double global_Zcenter);
 	
@@ -41,5 +44,6 @@ public:
 	cube right_hand;
 
 	double health;
+
 
 };

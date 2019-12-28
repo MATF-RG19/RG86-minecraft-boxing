@@ -1,3 +1,12 @@
+/***********Projekat Minecraft-boxing**********************
+	Literatura:
+		->kodovi sa casova iz racunarske grafike
+		->internet:
+			-https://community.khronos.org/ (poput man strana)
+			-https://stackoverflow.com/
+			-https://learnopengl.com/
+			-https://docs.microsoft.com/en-us/windows/win32/opengl/gl-functions (spisak funkcija opengl-a)
+***********************************************************/
 #include <stdlib.h>
 #include <GL/glut.h>
 #include <iostream>
@@ -6,6 +15,7 @@
 #include <time.h>
 #include "player.hpp"
 #include "image.h"
+#include <unistd.h>
 
 //dimenzije prozora
 static int window_width, window_height;
@@ -18,7 +28,22 @@ static GLuint names[5];
 double ring_centerX = 1.25;
 double ring_centerZ = 1.25;
 
+//kljucna promenljiva u projektu... sva usmeravanja se vrse prema njoj
 double angle;
+
+//parametri za kraj igrice
+double animation_parameter = 0.0;
+int animation_ongoing;
+int who_should_dance;
+
+
+void set_view();
+void victory_dance();
+void draw_spotlights();
+void draw_power_bar();
+void draw_ring();
+void end_game();
+void show_game_over();
 
 //prvi igrac
 player p1;
@@ -45,7 +70,6 @@ static int move_right2;
 static int guard2;
 
 
-
 //podesavanja tajmera
 #define TIMER_ID 0
 #define TIMER_INTERVAL 15
@@ -61,6 +85,8 @@ static void glutSpecialInput(int key, int x, int y);
 //funkcija za inicijalizaciju tekstura
 static void initialize(void);
 
+//funkcija za zavrsetak igrice
+static void finish_him(int wich_player);
 
 int main(int argc, char **argv)
 {
@@ -236,12 +262,32 @@ static void initialize(void)
     //zavrsavamo rad nad teksturom
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    std::string sg = "game_over.bmp";
+    image_read(image, sg.c_str());
+ 
+    //podesavanja teksture
+    //pocinjemo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, names[4]);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image->width, image->height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+
+    //zavrsavamo rad nad teksturom
+    glBindTexture(GL_TEXTURE_2D, 0);
+
 
     //uklanjamo dinamicki alociran objekat
     image_done(image);
 
 }
-
 
 static void on_reshape(int width, int height)
 {
@@ -250,35 +296,8 @@ static void on_reshape(int width, int height)
 }
 
 
-static void on_display(void)
-{
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glViewport(0, 0, window_width, window_height);
 
-    
-    //podesavanje perspektive
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(
-            60,
-            window_width/(float)window_height,
-            1, 50);
-
-
-    //postavljanje kamere
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(
-            6.5, 6.5, 6.5,
-            0, 0.2, 0,
-            0, 1, 0
-        );
-
-
-    //reflektori ne treba da budu osvetljeni(a i osvetljenje se ne primenjuje
-    // na teksture :( )
-    glDisable(GL_LIGHT0);
+void draw_spotlights(){
 
     //tribine
     // levi reflektor
@@ -287,7 +306,7 @@ static void on_display(void)
             glNormal3f(0,1,0);
 
             glTexCoord2f(0.1, 0);
-            glVertex3f(-5, 0, 6.4);
+            glVertex3f(-5, 0, 8.3);
  
             glTexCoord2f(1,0);
             glVertex3f(-5, 0, -5);
@@ -296,7 +315,7 @@ static void on_display(void)
             glVertex3f(-6, 6, -5);
 
             glTexCoord2f(0.1,0.95);
-            glVertex3f(-6, 6, 6.4);
+            glVertex3f(-6, 6, 6);
         glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -317,20 +336,17 @@ static void on_display(void)
         glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    //kako bih uredio smanjivanje snage pomocu kliping ravni sakrivam deo
-    //"potrosene" snage
-    
-    glPushMatrix();
-    double clipping_plane[] = {-1, -1, 0, 300-(19.0/18.0 *p2.health)};
-    glClipPlane(GL_CLIP_PLANE0, clipping_plane);
-    glPopMatrix();
-    
 
-    glPushMatrix();
-    double clipping_plane2[] = {1, 0, 0, -(double)window_width+690.0-p1.health};
-    glClipPlane(GL_CLIP_PLANE1, clipping_plane2);	
-    glPopMatrix();
+}
 
+void draw_power_bar(){
+
+	//globalna clipping ravan koja ce prekriti status barove kad se igrica zavrsi
+	double clipping_plane3[] = {-1, 0, 0, -100000};
+    glClipPlane(GL_CLIP_PLANE2, clipping_plane3);
+    
+    if(animation_parameter>0)
+		glEnable(GL_CLIP_PLANE2);
 
     //postavljanje power-barova
     glDisable(GL_LIGHTING);
@@ -342,7 +358,14 @@ static void on_display(void)
     	glPushMatrix();
     		glLoadIdentity();
     		//prebacujemo se na 2D crtanje preko celog ekrana
+
+			//kliping ravan za levi status-bar
+			double dl = 450*450/636.4;
+		    double clipping_plane[] = {-1/sqrt(2), -1/sqrt(2), 0, dl - p2.health};
+		    
+		    glClipPlane(GL_CLIP_PLANE0, clipping_plane);
     		glEnable(GL_CLIP_PLANE0);
+    	
     		gluOrtho2D(0,window_width,0,window_height);
     		//glavna linija snage
 		    glBindTexture(GL_TEXTURE_2D, names[3]);
@@ -425,6 +448,11 @@ static void on_display(void)
     	glPushMatrix();
     		glLoadIdentity();
     		//prebacujemo se na 2D crtanje preko celog ekrana
+
+    		double dd = (-window_width +450) / sqrt(2);
+    		double clipping_plane2[] = {1/sqrt(2), -1/sqrt(2), 0, dd-p1.health};
+    		glClipPlane(GL_CLIP_PLANE1, clipping_plane2);
+    		
     		glEnable(GL_CLIP_PLANE1);
     		gluOrtho2D(0,window_width,0,window_height);
     		//glavna linija snage
@@ -495,10 +523,15 @@ static void on_display(void)
 	glPopMatrix();
     glPopMatrix();
 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    
-    //plava svetlost se najvise odbija od rina
+     if(animation_parameter>0)
+		glDisable(GL_CLIP_PLANE2);
+
+}
+
+
+void draw_ring(){
+
+	//plava svetlost se najvise odbija od rina
     GLfloat ambient_coeffs[] = { 0.3, 0.6, 0.95, 1 };
     GLfloat diffuse_coeffs[] = { 0.4, 0.4, 1, 1 };
     GLfloat specular_coeffs[] = { 1, 1, 1, 1 };
@@ -519,10 +552,6 @@ static void on_display(void)
     GLfloat diffuse_coeffsC[] = { 0, 0, 0, 1 };
     GLfloat specular_coeffsC[] = { 1, 1, 1, 1 };
 
-    //siva boja za tribine
-    GLfloat ambient_coeffsS[] = { 0.5, 0.5, 0.5, 1 };
-    GLfloat diffuse_coeffsS[] = { 0.5, 0.5, 0.5, 1 };
-    GLfloat specular_coeffsS[] = { 1, 1, 1, 1 };
     
 
     //ring
@@ -643,13 +672,194 @@ static void on_display(void)
     glMaterialfv(GL_FRONT, GL_SPECULAR,  specular_coeffsC);
     glMaterialf(GL_FRONT,  GL_SHININESS, shininess);
     
+
+}
+
+void end_game(){
+
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	    
+	    glMatrixMode(GL_MODELVIEW);
+    	glPushMatrix();
+    	
+    	glLoadIdentity();
+    	glMatrixMode(GL_PROJECTION);
+    	glPushMatrix();
+    		glLoadIdentity();
+    		
+    		gluOrtho2D(0,window_width,0,window_height);
+	    	glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	    	glDisable(GL_LIGHT0);
+	    	glDisable(GL_LIGHTING);
+	      		
+	      	double blend = (animation_parameter-200.0)/200.0;
+	      	if(blend > 1)
+	      		blend = 1;
+			glColor4f(0.05,0.05,0.05,0.0+blend);
+	        glBegin(GL_POLYGON);
+	            glVertex2f(0,0);
+
+	            glVertex2f(window_width,0);
+
+	            glVertex2f(window_width, window_height);
+
+	            glVertex2f(0, window_height);
+	    	glEnd();
+
+	    	glDisable(GL_BLEND);
+	    	glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+        
+
+}
+
+void show_game_over(){
+
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	    
+	    glMatrixMode(GL_MODELVIEW);
+    	glPushMatrix();
+    	
+    	glLoadIdentity();
+    	glMatrixMode(GL_PROJECTION);
+    	glPushMatrix();
+    		glLoadIdentity();
+    		
+    		gluOrtho2D(0,window_width,0,window_height);
+	    	glDisable(GL_LIGHT0);
+	    	glDisable(GL_LIGHTING);
+	      	
+	      	glBindTexture(GL_TEXTURE_2D, names[4]);
+	        glBegin(GL_POLYGON);
+	        	glTexCoord2f(0.07,0);
+	            glVertex2f(0,0);
+
+	            glTexCoord2f(1,0);
+	            glVertex2f(window_width,0);
+
+	            glTexCoord2f(1,1);
+	            glVertex2f(window_width, window_height);
+
+	            glTexCoord2f(0.07,1);
+	            glVertex2f(0, window_height);
+	    	
+	    	glEnd();
+	      	glBindTexture(GL_TEXTURE_2D, 0);
+
+	    	glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+        
+}
+
+
+void set_view(){
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    glViewport(0, 0, window_width, window_height);
+
+    
+    //podesavanje perspektive
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(
+            60,
+            window_width/(float)window_height,
+            1, 50);
+
+
+    //postavljanje kamere
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(
+            6.5, 6.5, 6.5,
+            0, 0.2, 0,
+            0, 1, 0
+        );
+
+}
+
+
+static void on_display(void)
+{
+    
+    set_view();
+
+    // postavljmo iscrtavanja stvari na koje se ne primenjuje osvetljenje
+    draw_spotlights();
+    draw_power_bar();
+    
+    //nakon iscrtavanja stvari na koje se ne primenjuje osvetljenje, uklucujemo osvetljenje i crtamo
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    
+    draw_ring();
+
     //iscrtavanje igraca
     p1.draw_player();
     p2.draw_player();
 
+    //ako je neko pobedio pokrenut je tajmer za kraj, pa je animation_parameter pomereno preko 0
+    if(animation_parameter >0 and (who_should_dance == 1 or who_should_dance == 2))
+    	victory_dance();
+
+    //zatamljenje
+    if(animation_parameter > 200 and animation_parameter <450)
+    	end_game();
+
+    //iscrtavanje game over teksture
+    if(animation_parameter > 350)
+    	show_game_over();
+
     glutSwapBuffers();
 }
 
+void victory_dance(){
+
+	if(who_should_dance == 1){
+		//printf("I should dance");
+		p1.body.Ycenter += sin(animation_parameter/6)/20;
+		p1.head.Ycenter += sin(animation_parameter/6)/20;
+		p1.left_hand.Ycenter += sin(animation_parameter/6)/20;		
+		p1.right_hand.Ycenter += sin(animation_parameter/6)/20;
+		p1.left_foot.Ycenter += sin(animation_parameter/6)/20;
+		p1.right_foot.Ycenter += sin(animation_parameter/6)/20;
+
+	}else{
+		p2.body.Ycenter += sin(animation_parameter/6)/20;
+		p2.head.Ycenter += sin(animation_parameter/6)/20;
+		p2.left_hand.Ycenter += sin(animation_parameter/6)/20;		
+		p2.right_hand.Ycenter += sin(animation_parameter/6)/20;
+		p2.left_foot.Ycenter += sin(animation_parameter/6)/20;
+		p2.right_foot.Ycenter += sin(animation_parameter/6)/20;
+
+	}
+
+}
+
+
+//zavrsni tajmer
+//pokrece animacioni parametar koji obavlja animacije za kraj igrice
+static void on_timer_end(int value)
+{
+    
+    if (value != TIMER_ID)
+        return;
+
+    animation_parameter += 1.0;
+
+    glutPostRedisplay();
+    if(animation_ongoing) {
+        glutTimerFunc(TIMER_INTERVAL, on_timer_end, TIMER_ID);
+    }
+
+}
 
 
 static void on_timer_hand(int value)
@@ -663,6 +873,7 @@ static void on_timer_hand(int value)
 
     srand(time(NULL));
 
+
     //udarac leve ruke
     //ruci kazemo da se rotira za odredjeni deo. Kako je pritiskom na dugme
     //promenljiva hit stavljena na true, prilikom iscrtavanja se proverava njena
@@ -671,8 +882,8 @@ static void on_timer_hand(int value)
     if(p1.left_hand.rotate_for >= -120 && !p1.left_hand.rotate_end){
         p1.left_hand.rotate_for -= 10;
         
-        //detekcija udarca
 
+        //detekcija udarca
         /**************************************************************
         naravno ako protivnik drzi gard mozemo da ga udaramo ali mu ne 
         nanosimo stetu. Takodje podrazumeva se da neki udarac moze da 
@@ -680,11 +891,13 @@ static void on_timer_hand(int value)
         je to pokusaj po redu bio(dakle rand())"
         ***************************************************************/
 
-        if(rand()%10 == 1 or rand() == 5){
+        if(rand()%10 == 1 or rand()%10 == 5){
 	        	if(real_distance <0.4 and p2.left_hand.guard 
-	        		and p1.left_hand.rotate_for == -20){
+	        		and p1.left_hand.rotate_for == -20 and !animation_parameter){
 	        	p1.left_hand.rotate_end =true;
 	        	p2.health +=5;
+	        	if(p2.health >=210)
+	        		finish_him(2);
 	    	}
         }
 
@@ -692,24 +905,31 @@ static void on_timer_hand(int value)
         //protivniku
         //najjaci udarac je kad smo bas blizu protivniku
         if(real_distance <0.4 and real_distance and !p2.left_hand.guard and 
-        	p1.left_hand.rotate_for == -20){
+        	p1.left_hand.rotate_for == -20 and !animation_parameter){
         	p1.left_hand.rotate_end =true;
         	p2.health +=15;
-        	//odbijanje igraca            
+        	if(p2.health >=210)
+	        		finish_him(2);       
     	}
 
     	//srednji udarac je kad smo na nekom optimalnom rastojanju
         if(real_distance <0.55 and real_distance > 0.4 and !p2.left_hand.guard and 
-        	p1.left_hand.rotate_for == -60){
+        	p1.left_hand.rotate_for == -60 and !animation_parameter){
         	p1.left_hand.rotate_end =true;
         	p2.health +=10;
+        	if(p2.health >=210)
+	        		finish_him(2);
     	}
 
     	//ako protivnika jedva mozemo da "okrznemo" smanjujemo mu malo snage
         if(real_distance <0.75 and real_distance > 0.55 and !p2.left_hand.guard and 
-        	p1.left_hand.rotate_for == -90)
+        	p1.left_hand.rotate_for == -90 and !animation_parameter){
         	p2.health +=5;
-        
+        	if(p2.health >=210)
+	        		finish_him(2);
+    	}
+
+
 
         //ako je rotacija dosla do kraja treba stati
         if(p1.left_hand.rotate_for == -120)
@@ -731,30 +951,39 @@ static void on_timer_hand(int value)
 
 
         //slucajan udarac kroz blok
-        if(rand()%10 == 1 or rand() == 5){
+        if(rand()%10 == 1 or rand()%10 == 5){
 	        	if(real_distance <0.4 and p2.left_hand.guard
 	        	 and p1.right_hand.rotate_for == -20){
 	        	p1.right_hand.rotate_end =true;
 	        	p2.health +=5;
+	        	if(p2.health >=210)
+	        		finish_him(2);
 	    	}	
         }
 
 
         //detekcija udarca
         if(real_distance <0.4 and real_distance and !p2.left_hand.guard and 
-        	p1.right_hand.rotate_for == -20){
+        	p1.right_hand.rotate_for == -20 and !animation_parameter){
         	p1.right_hand.rotate_end =true;
         	p2.health +=15;
+        	if(p2.health >=210)
+	        		finish_him(2);
     	}
 
         if(real_distance <0.55 and real_distance > 0.4 and !p2.left_hand.guard and 
-        	p1.right_hand.rotate_for == -60){
+        	p1.right_hand.rotate_for == -60 and !animation_parameter){
         	p1.right_hand.rotate_end =true;
         	p2.health +=10;
+        	if(p2.health >=210)
+	        		finish_him(2);
     	}
         if(real_distance <0.75 and real_distance > 0.55 and !p2.left_hand.guard and 
-        	p1.right_hand.rotate_for == -90)
+        	p1.right_hand.rotate_for == -90 and !animation_parameter){
         	p2.health +=5;
+        	if(p2.health >=210)
+	        		finish_him(2);
+    	}
         
 
         if(p1.right_hand.rotate_for == -120)
@@ -770,9 +999,7 @@ static void on_timer_hand(int value)
         p1.right_hand.rotate_end= false; 
     }
 
-
-
-
+    
     glutPostRedisplay();
 
     if (left_hand_punch || right_hand_punch) {
@@ -802,29 +1029,38 @@ static void on_timer_hand2(int value)
         p2.left_hand.rotate_for -= 10;
 
         //slucajan udarac kroz blok
-        if(rand()%10 == 1 or rand() == 5){
+        if(rand()%10 == 1 or rand()%10 == 5){
 	        	if(real_distance <0.4 and p1.left_hand.guard
 	        	and p2.left_hand.rotate_for == -20){
 	        	p2.left_hand.rotate_end =true;
 	        	p1.health +=5;
+	        	if(p1.health >=210)
+	        		finish_him(1);
 	    	}	
         }
 
         //detekcija udarca
         if(real_distance <0.4 and real_distance and !p1.left_hand.guard and 
-        	p2.left_hand.rotate_for == -20){
+        	p2.left_hand.rotate_for == -20 and !animation_parameter){
         	p2.left_hand.rotate_end =true;
         	p1.health +=15;
+        	if(p1.health >=210)
+	        		finish_him(1);
     	}
 
         if(real_distance <0.55 and real_distance > 0.4 and !p1.left_hand.guard and 
-        	p2.left_hand.rotate_for == -60){
+        	p2.left_hand.rotate_for == -60 and !animation_parameter){
         	p2.left_hand.rotate_end =true;
         	p1.health +=10;
+        	if(p1.health >=210)
+	        		finish_him(1);
     	}
         if(real_distance <0.75 and real_distance > 0.55 and !p1.left_hand.guard and 
-        	p2.left_hand.rotate_for == -90)
+        	p2.left_hand.rotate_for == -90 and !animation_parameter){
         	p1.health +=5;
+        	if(p1.health >=210)
+	        		finish_him(1);
+	        }
         
 
         //ako je rotacija dosla do kraja treba stati
@@ -846,29 +1082,38 @@ static void on_timer_hand2(int value)
         p2.right_hand.rotate_for -= 10;
 
         //slucajan udarac kroz blok
-        if(rand()%10 == 1 or rand() == 5){
+        if(rand()%10 == 1 or rand()%10 == 5){
 	        	if(real_distance <0.4 and !p1.left_hand.guard and 
 	        	p2.right_hand.rotate_for == -20){
 	        	p2.right_hand.rotate_end =true;
 	        	p1.health +=5;
+	        	if(p1.health >=210)
+	        		finish_him(1);
 	    	}	
         }
 
         //detekcija udarca
         if(real_distance <0.4 and real_distance and !p1.left_hand.guard and 
-        	p2.right_hand.rotate_for == -20){
+        	p2.right_hand.rotate_for == -20 and !animation_parameter){
         	p2.right_hand.rotate_end =true;
         	p1.health +=15;
+        	if(p1.health >=210)
+	        		finish_him(1);
     	}
 
         if(real_distance <0.55 and real_distance > 0.4 and !p1.left_hand.guard and 
-        	p2.right_hand.rotate_for == -60){
+        	p2.right_hand.rotate_for == -60 and !animation_parameter){
         	p2.right_hand.rotate_end =true;
         	p1.health +=10;
+        	if(p1.health >=210)
+	        		finish_him(1);
     	}
         if(real_distance <0.75 and real_distance > 0.55 and !p1.left_hand.guard and 
-        	p2.right_hand.rotate_for == -90)
+        	p2.right_hand.rotate_for == -90 and !animation_parameter){
         	p1.health +=5;
+        	if(p1.health >=210)
+	        		finish_him(1);
+    	}
 
         //ako je ruka dosla do kraja rotacije i treba da se vrati
         if(p2.right_hand.rotate_for == -120)
@@ -1905,5 +2150,83 @@ static void on_Upkeyboard(unsigned char key, int x, int y){
         break;
 
   }
+
+}
+
+static void finish_him(int wich_player){
+
+	if(wich_player == 1){
+		//printf("Pobedio je igrac 2");
+		
+
+		// lansiramo protivnika zavrsnim udarcem
+		p1.sky_launch();
+        
+        //pokrece se bilo koji tajmer(recimo za kretanje na gore) da bi animacija izgledala "glatko"
+        move_up = 1;
+        
+        //protivnik se krece pod dejstvom udarca
+        p1.head.movement = true;
+        p1.body.movement = true;
+        p1.left_foot.movement = true;
+        p1.right_foot.movement = true;
+        p1.left_hand.movement = true;
+        p1.right_hand.movement = true;
+
+        //pomocna inicijalizacija promenljive koja regulise koliko puta se ponovi translacija
+        //veca promenljiva + manji korak za koji se nesto translira = sporija animacija
+        p2.right_hand.translate_for = 10;
+        p2.left_hand.translate_for = 10;
+        p2.right_foot.translate_for = 10;
+        p2.left_foot.translate_for = 10;
+        p2.body.translate_for = 10;
+        p2.head.translate_for = 10;
+        
+        //pokretanje tajmera za gubitnika
+        glutTimerFunc(TIMER_INTERVAL, on_timer_movement2, TIMER_ID);
+
+        who_should_dance = 2;
+        animation_ongoing += 1;
+        if(animation_ongoing == 1)
+        	glutTimerFunc(TIMER_INTERVAL, on_timer_end, TIMER_ID);
+
+	}
+	else{
+		//printf("Pobedio je igrac 1");
+		
+		// lansiramo protivnika zavrsnim udarcem
+		p2.sky_launch();
+        
+        //pokrece se bilo koji tajmer(recimo za kretanje na gore) da bi animacija izgledala "glatko"
+        move_up = 1;
+        
+        //protivnik se krece pod dejstvom udarca
+        p2.head.movement = true;
+        p2.body.movement = true;
+        p2.left_foot.movement = true;
+        p2.right_foot.movement = true;
+        p2.left_hand.movement = true;
+        p2.right_hand.movement = true;
+
+        //pomocna inicijalizacija promenljive koja regulise koliko puta se ponovi translacija
+        //veca promenljiva + manji korak za koji se nesto translira = sporija animacija
+        p1.right_hand.translate_for = 10;
+        p1.left_hand.translate_for = 10;
+        p1.right_foot.translate_for = 10;
+        p1.left_foot.translate_for = 10;
+        p1.body.translate_for = 10;
+        p1.head.translate_for = 10;
+        
+        //pokretanje tajmera za gubitnika
+        glutTimerFunc(TIMER_INTERVAL, on_timer_movement, TIMER_ID);
+
+        who_should_dance = 1;
+        animation_ongoing += 1;
+        if(animation_ongoing == 1)
+        	glutTimerFunc(TIMER_INTERVAL, on_timer_end, TIMER_ID);
+
+	}
+	
+	
 
 }

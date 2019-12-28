@@ -3,6 +3,9 @@
 #include<math.h>
 
 
+//koriscena inicijalizatorska lista jer je inicijalizacija u hpp fajlu davala bag
+//mislim da je bag jer nisam koristio "make clean" pre koriscenja make opcije
+//ako je tako, tehnicki nije ni bio bag, ali ovkao radi pa necu ispravljati... :)
 player :: player() :health(0){
 
     //glava
@@ -186,6 +189,17 @@ void player :: move_right(){
     left_hand.cube_set_translate(0.023, 0, -0.023);
     right_hand.cube_set_translate(0.023, 0, -0.023);
 }
+
+
+void player :: sky_launch(){
+    head.cube_set_translate(0, 0.25, 0);
+    body.cube_set_translate(0, 0.25, 0);
+    left_foot.cube_set_translate(0, 0.25, 0);
+    right_foot.cube_set_translate(0, 0.25, 0);
+    left_hand.cube_set_translate(0, 0.25, 0);
+    right_hand.cube_set_translate(0, 0.25, 0);
+}
+
 
 void player :: punch_move(double x, double z){
     head.cube_set_translate(x, 0, z);

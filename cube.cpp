@@ -43,8 +43,7 @@ void cube :: draw(){
         
     }
 
-
-   	 
+     	 
     //iscrtavanje koceke
     glTranslatef(global_Xcenter , global_Ycenter, global_Zcenter);
     glRotatef(active_angle , 0, 1, 0);
