@@ -312,7 +312,7 @@ void draw_spotlights(){
             glVertex3f(-5, 0, -5);
 
             glTexCoord2f(1,0.95);
-            glVertex3f(-6, 6, -5);
+            glVertex3f(-5, 6, -5);
 
             glTexCoord2f(0.1,0.95);
             glVertex3f(-6, 6, 6);
